@@ -495,5 +495,52 @@ TEST_CASE("3d euclidean multiplication", "[3d euclidean]")
 	}
 }
 
+TEST_CASE("3D Multivectors")
+{
+	using namespace GA;
+	using Euclidean3D = Signature<double, 3>;
+	using Scalar = BaseVector<Euclidean3D>;
+	using X = Multivector<BaseVector<Euclidean3D, 0>>;
+	using Y = Multivector < BaseVector<Euclidean3D, 1>>;
+	using Z = Multivector < BaseVector<Euclidean3D, 2>>;
+	using XY = Multivector < BaseVector<Euclidean3D, 0, 1>>;
+	using XZ = Multivector < BaseVector<Euclidean3D, 0, 2>>;
+	using YZ = Multivector < BaseVector<Euclidean3D, 1, 2>>;
+	using XYZ = Multivector < BaseVector<Euclidean3D, 0, 1, 2>>;
 
+	X x{ 1 };
+	Y y{ 1 };
+	Z z{ 1 };
+	XY xy{ 1 };
+	XZ xz{ 1 };
+	YZ yz{ 1 };
+	XYZ xyz{ 1 };
+
+	SECTION("Multivector Addition")
+	{
+		auto v_xpx = x + x;
+
+		auto v_xpy = x + y;
+		auto v_ypx = x + y;
+
+		auto v_xpxz = x + xz;
+		auto v_xzpx = xz + x;
+
+		auto v_xp1 = x + 1;
+		auto v_1px = 1 + x;
+
+
+		REQUIRE(IsType<X>(v_xpx));
+
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 1>>>(v_xpy));
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 1>>>(v_ypx));
+
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 0, 2>>>(v_xpxz));
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 0, 2>>>(v_xzpx));
+
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_xp1));
+		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_1px));
+	}
+
+}
 
