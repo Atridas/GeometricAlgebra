@@ -3,14 +3,13 @@
 namespace GA
 {
 
-	template<typename T, int Positive, int Negative = 0, int Zero = 0>
+	template<typename T, int Positive, int Negative = 0>
 	struct Signature
 	{
 		static constexpr int Positive = Positive;
 		static constexpr int Negative = Negative;
-		static constexpr int Zero = Zero;
 
-		static constexpr int NumBaseVectors = Positive + Negative + Zero;
+		static constexpr int NumBaseVectors = Positive + Negative;
 
 		static constexpr int GetSignature(int index)
 		{
@@ -18,10 +17,8 @@ namespace GA
 				return 1;
 			else if (index - Positive < Negative)
 				return -1;
-			else if (index - Positive - Negative < Zero)
-				return 0;
 			else
-				return -9999999;
+				return 0;
 		}
 
 		static constexpr int NumBase(int grade)
@@ -34,7 +31,7 @@ namespace GA
 			return static_cast<int>(acum);
 		}
 
-		template<int N = Positive + Negative + Zero>
+		template<int N = Positive + Negative>
 		static constexpr auto Pseudoscalar();
 		static constexpr auto InversePseudoscalar();
 
