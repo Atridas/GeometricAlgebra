@@ -553,8 +553,8 @@ TEST_CASE("3D Multivectors")
 		auto v_xmxz = x * xz;
 		auto v_xzmx = xz * x;
 
-		auto v_xm1 = x * 1;
-		auto v_1mx = 1 * x;
+		auto v_xm1 = x * 2;
+		auto v_1mx = 2 * x;
 
 
 		REQUIRE(IsType<Scalar>(v_xmx));
