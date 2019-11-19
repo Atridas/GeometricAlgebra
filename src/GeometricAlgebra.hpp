@@ -11,7 +11,7 @@ namespace GA
 
 		static constexpr int NumBaseVectors = Positive + Negative;
 
-		static constexpr int GetSignature(int index)
+		static constexpr int GetSignature(int index) noexcept
 		{
 			if (index < Positive)
 				return 1;
@@ -21,7 +21,7 @@ namespace GA
 				return 0;
 		}
 
-		static constexpr int NumBase(int grade)
+		static constexpr int NumBase(int grade) noexcept
 		{
 			long long int acum = 1;
 			for (long long int i = 0; i < grade; ++i)
@@ -32,8 +32,8 @@ namespace GA
 		}
 
 		template<int N = Positive + Negative>
-		static constexpr auto Pseudoscalar();
-		static constexpr auto InversePseudoscalar();
+		static constexpr auto Pseudoscalar() noexcept;
+		static constexpr auto InversePseudoscalar() noexcept;
 
 		using Type = T;
 	};
@@ -50,42 +50,42 @@ namespace GA
 		using BaseScalar = BaseVector<Signature>;
 		using T = typename Signature::Type;
 
-		constexpr BaseVector() {}
+		constexpr BaseVector() noexcept {}
 
 		template<int... ParamIndexes>
-		constexpr BaseVector<Signature, ParamIndexes...> MultType(BaseVector<Signature, ParamIndexes...>) const
+		constexpr BaseVector<Signature, ParamIndexes...> MultType(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			return BaseVector<Signature, ParamIndexes...>{};
 		}
 
 		template<int... ParamIndexes>
-		constexpr int MultSign(BaseVector<Signature, ParamIndexes...>) const
+		constexpr int MultSign(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			return 1;
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const
+		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return false;
 		}
 
 		template<int FirstIndex, int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, FirstIndex, ParamIndexes...>) const
+		constexpr int operator<(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
 		{
 			return true;
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const
+		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return true;
 		}
 
 		template<int FirstIndex, int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, FirstIndex, ParamIndexes...>) const
+		constexpr int operator==(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
 		{
 			return false;
 		}
@@ -101,33 +101,33 @@ namespace GA
 		static constexpr int First = FirstIndex;
 		using ReducedBaseVector = BaseVector<Signature, Indexes...>;
 
-		constexpr BaseVector() {}
+		constexpr BaseVector() noexcept {}
 
-		constexpr BaseVector<Signature, FirstIndex, Indexes...> MultType(BaseVector<Signature> v) const
+		constexpr BaseVector<Signature, FirstIndex, Indexes...> MultType(BaseVector<Signature> v) const noexcept
 		{
 			return BaseVector<Signature, FirstIndex, Indexes...>{};
 		}
 		
-		constexpr int MultSign(BaseVector<Signature> v) const
+		constexpr int MultSign(BaseVector<Signature> v) const noexcept
 		{
 			return 1;
 		}
 
 		template<int FirstParamIndex, int... ParamIndexes>
-		constexpr auto MultType(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const;
+		inline constexpr auto MultType(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const noexcept;
 		
 		template<int FirstParamIndex, int... ParamIndexes>
-		constexpr int MultSign(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const;
+		inline constexpr int MultSign(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const noexcept;
 
 		template<int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const
+		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return false;
 		}
 
 		template<int ParamFirstIndex, int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const
+		constexpr int operator<(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const noexcept
 		{
 			if constexpr (sizeof...(Indexes) < sizeof...(ParamIndexes))
 				return true;
@@ -142,14 +142,14 @@ namespace GA
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const
+		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return false;
 		}
 
 		template<int ParamFirstIndex, int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const
+		constexpr int operator==(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const noexcept
 		{
 			return (FirstIndex == ParamFirstIndex) && (BaseVector<Signature, Indexes...>{} == BaseVector<Signature, ParamIndexes...>{});
 		}
@@ -157,7 +157,7 @@ namespace GA
 
 	template<typename Signature, int FirstIndex, int... Indexes>
 	template<int FirstParamIndex, int... ParamIndexes>
-	constexpr auto BaseVector<Signature, FirstIndex, Indexes...>::MultType(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const
+	inline constexpr auto BaseVector<Signature, FirstIndex, Indexes...>::MultType(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const noexcept
 	{
 		if constexpr (sizeof...(Indexes) == 0)
 		{
@@ -179,7 +179,7 @@ namespace GA
 
 	template<typename Signature, int FirstIndex, int... Indexes>
 	template<int FirstParamIndex, int... ParamIndexes>
-	constexpr int BaseVector<Signature, FirstIndex, Indexes...>::MultSign(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const
+	inline constexpr int BaseVector<Signature, FirstIndex, Indexes...>::MultSign(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const noexcept
 	{
 		if constexpr (sizeof...(Indexes) == 0)
 		{
@@ -214,13 +214,13 @@ namespace GA
 		using T = int;
 
 		template <typename... OtherBaseVectors>
-		constexpr Multivector< OtherBaseVectors...> operator+(Multivector<OtherBaseVectors...> v) const
+		constexpr Multivector< OtherBaseVectors...> operator+(Multivector<OtherBaseVectors...> v) const noexcept
 		{
 			return v;
 		}
 
 		template <typename... OtherBaseVectors>
-		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const
+		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const noexcept
 		{
 			return Multivector<>{};
 		}
@@ -236,29 +236,29 @@ namespace GA
 		Multivector<BaseVectors...> others;
 
 		template <typename... OtherBaseVectors>
-		constexpr Multivector<FirstBaseVector, BaseVectors...> operator+(Multivector<OtherBaseVectors...>) const
+		constexpr Multivector<FirstBaseVector, BaseVectors...> operator+(Multivector<OtherBaseVectors...>) const noexcept
 		{
 			static_assert(sizeof...(OtherBaseVectors) == 0);
 			return *this;
 		}
 
 		template <typename... OtherBaseVectors>
-		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const
+		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const noexcept
 		{
 			static_assert(sizeof...(OtherBaseVectors) == 0);
 			return Multivector<>{};
 		}
 
 		template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
-		constexpr auto operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const;
+		inline constexpr auto operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept;
 
 		template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
-		constexpr auto operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const;
+		inline constexpr auto operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept;
 	};
 
 	template <typename FirstBaseVector, typename... BaseVectors>
 	template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
-	constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const
+	inline constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept
 	{
 		if constexpr (FirstBaseVector{} == FirstOtherBaseVector{})
 			return Multivector<FirstBaseVector>{ value + v.value } +(others + v.others);
@@ -271,7 +271,7 @@ namespace GA
 	}
 
 	template <typename... BaseVectors>
-	constexpr auto operator+(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> v)
+	inline constexpr auto operator+(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> v) noexcept
 	{
 		if constexpr (sizeof...(BaseVectors) == 0)
 		{
@@ -286,7 +286,7 @@ namespace GA
 	}
 
 	template <typename... BaseVectors>
-	constexpr auto operator+(Multivector<BaseVectors...> v, typename Multivector<BaseVectors...>::T scalar)
+	inline constexpr auto operator+(Multivector<BaseVectors...> v, typename Multivector<BaseVectors...>::T scalar) noexcept
 	{
 		if constexpr (sizeof...(BaseVectors) == 0)
 		{
@@ -301,7 +301,7 @@ namespace GA
 
 	template <typename FirstBaseVector, typename... BaseVectors>
 	template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
-	constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const
+	inline constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept
 	{
 		using FirstVectorResultType = decltype(FirstBaseVector{}.MultType(FirstOtherBaseVector{}));
 		constexpr int Sign = FirstBaseVector{}.MultSign(FirstOtherBaseVector{});
@@ -309,7 +309,7 @@ namespace GA
 	}
 
 	template <typename... BaseVectors>
-	constexpr auto operator*(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> v)
+	inline constexpr auto operator*(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> v) noexcept
 	{
 		if constexpr (sizeof...(BaseVectors) == 0)
 		{
@@ -324,7 +324,7 @@ namespace GA
 	}
 
 	template <typename... BaseVectors>
-	constexpr auto operator*(Multivector<BaseVectors...> v, typename Multivector<BaseVectors...>::T scalar)
+	inline constexpr auto operator*(Multivector<BaseVectors...> v, typename Multivector<BaseVectors...>::T scalar) noexcept
 	{
 		if constexpr (sizeof...(BaseVectors) == 0)
 		{
