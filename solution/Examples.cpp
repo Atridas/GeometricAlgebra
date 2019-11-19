@@ -499,7 +499,7 @@ TEST_CASE("3D Multivectors")
 {
 	using namespace GA;
 	using Euclidean3D = Signature<double, 3>;
-	using Scalar = BaseVector<Euclidean3D>;
+	using Scalar = Multivector<BaseVector<Euclidean3D>>;
 	using X = Multivector<BaseVector<Euclidean3D, 0>>;
 	using Y = Multivector < BaseVector<Euclidean3D, 1>>;
 	using Z = Multivector < BaseVector<Euclidean3D, 2>>;
@@ -540,6 +540,33 @@ TEST_CASE("3D Multivectors")
 
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_xp1));
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_1px));
+	}
+	
+
+	SECTION("Multivector Multiplication")
+	{
+		auto v_xmx = x * x;
+
+		auto v_xmy = x * y;
+		auto v_ymx = x * y;
+
+		auto v_xmxz = x * xz;
+		auto v_xzmx = xz * x;
+
+		auto v_xm1 = x * 1;
+		auto v_1mx = 1 * x;
+
+
+		REQUIRE(IsType<Scalar>(v_xmx));
+
+		REQUIRE(IsType<XY>(v_xmy));
+		REQUIRE(IsType<XY>(v_ymx));
+
+		REQUIRE(IsType<Z>(v_xmxz));
+		REQUIRE(IsType<Z>(v_xzmx));
+
+		REQUIRE(IsType<X>(v_xm1));
+		REQUIRE(IsType<X>(v_1mx));
 	}
 
 }

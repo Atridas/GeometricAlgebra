@@ -211,6 +211,7 @@ namespace GA
 	{
 		static_assert(sizeof...(BaseVectors) == 0);
 		static constexpr int Grade = 0;
+		using T = int;
 
 		template <typename... OtherBaseVectors>
 		constexpr Multivector< OtherBaseVectors...> operator+(Multivector<OtherBaseVectors...> v) const
@@ -302,6 +303,37 @@ namespace GA
 	template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
 	constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const
 	{
+		using FirstVectorResultType = decltype(FirstBaseVector{}.MultType(FirstOtherBaseVector{}));
+		constexpr int Sign = FirstBaseVector{}.MultSign(FirstOtherBaseVector{});
+		return Multivector<FirstVectorResultType>{Sign * value * v.value} + others * Multivector<FirstOtherBaseVector>{v.value} + *this * v.others;
+	}
 
+	template <typename... BaseVectors>
+	constexpr auto operator*(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> v)
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+		{
+			return (typename Multivector<BaseVectors...>::T)0;
+		}
+		else
+		{
+			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
+			using Q = typename Multivector<BaseVectors...>::T;
+			return BaseScalar{ (Q)scalar } * v;
+		}
+	}
+
+	template <typename... BaseVectors>
+	constexpr auto operator*(Multivector<BaseVectors...> v, typename Multivector<BaseVectors...>::T scalar)
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+		{
+			return (typename Multivector<BaseVectors...>::T)0;
+		}
+		else
+		{
+			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
+			return BaseScalar{ scalar } * v;
+		}
 	}
 }
