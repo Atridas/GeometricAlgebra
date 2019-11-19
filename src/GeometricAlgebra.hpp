@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace GA
 {
 
@@ -65,29 +67,35 @@ namespace GA
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
+		constexpr bool operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return false;
 		}
 
 		template<int FirstIndex, int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
+		constexpr bool operator<(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
 		{
 			return true;
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
+		constexpr bool operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return true;
 		}
 
 		template<int FirstIndex, int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
+		constexpr bool operator==(BaseVector<Signature, FirstIndex, ParamIndexes...>) const noexcept
 		{
 			return false;
+		}
+
+		template<int... ParamIndexes>
+		constexpr static bool HasParams() noexcept
+		{
+			return sizeof...(ParamIndexes) == 0;
 		}
 	};
 
@@ -120,14 +128,14 @@ namespace GA
 		inline constexpr int MultSign(BaseVector<Signature, FirstParamIndex, ParamIndexes...> v) const noexcept;
 
 		template<int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
+		constexpr bool operator<(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
 			static_assert(sizeof...(ParamIndexes) == 0);
 			return false;
 		}
 
 		template<int ParamFirstIndex, int... ParamIndexes>
-		constexpr int operator<(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const noexcept
+		constexpr bool operator<(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const noexcept
 		{
 			if constexpr (sizeof...(Indexes) < sizeof...(ParamIndexes))
 				return true;
@@ -142,16 +150,25 @@ namespace GA
 		}
 
 		template<int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
+		constexpr static bool HasParams() noexcept
 		{
-			static_assert(sizeof...(ParamIndexes) == 0);
-			return false;
+			if constexpr (sizeof...(ParamIndexes) == 0)
+				return false;
+			else
+				return HasParamsPriv<ParamIndexes...>();
 		}
 
-		template<int ParamFirstIndex, int... ParamIndexes>
-		constexpr int operator==(BaseVector<Signature, ParamFirstIndex, ParamIndexes...>) const noexcept
+		template<int... ParamIndexes>
+		constexpr bool operator==(BaseVector<Signature, ParamIndexes...>) const noexcept
 		{
-			return (FirstIndex == ParamFirstIndex) && (BaseVector<Signature, Indexes...>{} == BaseVector<Signature, ParamIndexes...>{});
+			return HasParams<ParamIndexes...>();
+		}
+
+	private:
+		template<int ParamFirstIndex, int... ParamIndexes>
+		constexpr static bool HasParamsPriv() noexcept
+		{
+			return (FirstIndex == ParamFirstIndex) && (BaseVector<Signature, Indexes...>{}.HasParams<ParamIndexes...>());;
 		}
 	};
 
@@ -212,6 +229,20 @@ namespace GA
 		static_assert(sizeof...(BaseVectors) == 0);
 		static constexpr int Grade = 0;
 		using T = int;
+		using BaseScalar = int;
+		static constexpr bool IsZeroMultivector = true;
+
+		template<int... Indexes>
+		constexpr T GetFactor() const noexcept
+		{
+			return 0;
+		}
+
+		template<typename BaseVector>
+		constexpr Multivector<> RemoveBaseVector() const noexcept
+		{
+			return Multivector<>{};
+		}
 
 		template <typename... OtherBaseVectors>
 		constexpr Multivector< OtherBaseVectors...> operator+(Multivector<OtherBaseVectors...> v) const noexcept
@@ -220,10 +251,19 @@ namespace GA
 		}
 
 		template <typename... OtherBaseVectors>
+		constexpr Multivector< OtherBaseVectors...> operator-(Multivector<OtherBaseVectors...> v) const noexcept
+		{
+			return -v;
+		}
+
+		template <typename... OtherBaseVectors>
 		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const noexcept
 		{
 			return Multivector<>{};
 		}
+
+		template <typename... OtherBaseVectors>
+		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename FirstBaseVector, typename... BaseVectors>
@@ -231,9 +271,55 @@ namespace GA
 	{
 		using TBaseVector = FirstBaseVector;
 		using T = typename TBaseVector::T;
+		static constexpr int FirstBaseVectorGrade = TBaseVector::Grade;
 		using BaseScalar = Multivector<typename TBaseVector::BaseScalar>;
+		static constexpr bool IsZeroMultivector = false;
 		T value;
 		Multivector<BaseVectors...> others;
+
+		template<int... Indexes>
+		constexpr T GetFactor() const noexcept
+		{
+			if constexpr (TBaseVector::template HasParams<Indexes...>())
+			{
+				return value;
+			}
+			else
+			{
+				return others.GetFactor<Indexes...>();
+			}
+		}
+
+		template<typename Signature, int... Indexes>
+		constexpr T GetFactor(BaseVector<Signature, Indexes...>) const noexcept
+		{
+			return GetFactor<Indexes...>();
+		}
+
+		template<typename BaseVectorFactor>
+		constexpr T GetFactor(Multivector<BaseVectorFactor>) const noexcept
+		{
+			return GetFactor(BaseVectorFactor{});
+		}
+
+		template<typename BaseVector>
+		constexpr auto RemoveBaseVector() const noexcept
+		{
+			if constexpr (FirstBaseVector{} == BaseVector{})
+				return others;
+			else
+				return GetFirstMultivector() + others.RemoveBaseVector<BaseVector>();
+		}
+
+		constexpr Multivector<FirstBaseVector> GetFirstMultivector() const noexcept
+		{
+			return Multivector<FirstBaseVector>{ value };
+		}
+
+		constexpr Multivector<FirstBaseVector> CreateFirstMultivector(T v) const noexcept
+		{
+			return Multivector<FirstBaseVector>{ v };
+		}
 
 		template <typename... OtherBaseVectors>
 		constexpr Multivector<FirstBaseVector, BaseVectors...> operator+(Multivector<OtherBaseVectors...>) const noexcept
@@ -252,8 +338,17 @@ namespace GA
 		template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
 		inline constexpr auto operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept;
 
+		template <typename... OtherBaseVectors>
+		constexpr auto operator-(Multivector<OtherBaseVectors...> v) const noexcept
+		{
+			return *this + -v;
+		}
+
 		template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
 		inline constexpr auto operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept;
+
+		template <typename... OtherBaseVectors>
+		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename FirstBaseVector, typename... BaseVectors>
@@ -299,6 +394,20 @@ namespace GA
 		}
 	}
 
+	// ----------------------------------------------------------------------------------------------------------------
+
+
+	template <typename... BaseVectors>
+	inline constexpr auto operator-(Multivector<BaseVectors...> v) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return v;
+		else
+			return v.CreateFirstMultivector(-v.value) + -v.others;
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
 	template <typename FirstBaseVector, typename... BaseVectors>
 	template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
 	inline constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator*(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept
@@ -334,6 +443,180 @@ namespace GA
 		{
 			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
 			return BaseScalar{ scalar } * v;
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template <typename FirstBaseVector, typename... BaseVectors>
+	template <typename... OtherBaseVectors>
+	inline constexpr bool Multivector<FirstBaseVector, BaseVectors...>::operator==(Multivector<OtherBaseVectors...> m) const noexcept
+	{
+		if constexpr (sizeof...(OtherBaseVectors) == 0)
+		{
+			return GetFactor<>() == 0 && others == m;
+		}
+		else
+		{
+			return value == m.GetFactor(FirstBaseVector{}) && others == m.RemoveBaseVector<FirstBaseVector>();
+		}
+	}
+
+
+	template <typename... BaseVectors>
+	inline constexpr bool operator==(Multivector<BaseVectors...> m, typename Multivector<BaseVectors...>::T scalar) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return scalar == 0;
+		else
+			return m == typename Multivector<BaseVectors...>::BaseScalar{ scalar };
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr bool operator==(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> m) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return scalar == 0;
+		else
+			return m == typename Multivector<BaseVectors...>::BaseScalar{ scalar };
+	}
+
+	template <typename... BaseVectors>
+	template <typename... OtherBaseVectors>
+	inline constexpr bool Multivector<BaseVectors...>::operator==(Multivector<OtherBaseVectors...> m) const noexcept
+	{
+		static_assert(sizeof...(BaseVectors) == 0);
+		return m == 0;
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template <int Grade, typename... BaseVectors>
+	inline constexpr auto ProjectGrade(Multivector<BaseVectors...> v) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return Multivector<>{};
+		else if constexpr (Multivector<BaseVectors...>::FirstBaseVectorGrade == Grade)
+		{
+			return v.GetFirstMultivector() + ProjectGrade<Grade>(v.others);
+		}
+		else
+		{
+			return ProjectGrade<Grade>(v.others);
+		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+
+	template<typename FirstBaseVector, typename SecondBaseVector>
+	inline constexpr int GradeFromMultiplyingBaseVectors() noexcept
+	{
+		constexpr auto r = FirstBaseVector{}.MultType(SecondBaseVector{});
+		return r.Grade;
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr int GradeFromMultiplyingMultivectors() noexcept
+	{
+		return GradeFromMultiplyingBaseVectors<typename FirstMultivector::TBaseVector, typename SecondMultivector::TBaseVector>();
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr auto OuterProduct(FirstMultivector a, SecondMultivector b)
+	{
+		if constexpr (std::is_arithmetic_v< FirstMultivector> || std::is_arithmetic_v< SecondMultivector>) // TODO this with concepts
+			return a * b;
+		else if constexpr (FirstMultivector::IsZeroMultivector || SecondMultivector::IsZeroMultivector)
+			return Multivector<>{};
+		else
+		{
+			constexpr int Grade1 = FirstMultivector::FirstBaseVectorGrade;
+			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
+			constexpr int GradeExpectedResult = Grade1 + Grade2;
+			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			if constexpr(GradeExpectedResult == GradeActualResult)
+				return a.GetFirstMultivector() * b.GetFirstMultivector() + OuterProduct(a.others, b);
+			else
+				return OuterProduct(a.others, b);
+		}
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr auto LeftContraction(FirstMultivector a, SecondMultivector b)
+	{
+		if constexpr (std::is_arithmetic_v< FirstMultivector> || std::is_arithmetic_v< SecondMultivector>) // TODO this with concepts
+			return a * b;
+		else if constexpr (FirstMultivector::IsZeroMultivector || SecondMultivector::IsZeroMultivector)
+			return Multivector<>{};
+		else
+		{
+			constexpr int Grade1 = FirstMultivector::FirstBaseVectorGrade;
+			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
+			constexpr int GradeExpectedResult = Grade2 - Grade1;
+			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			if constexpr (GradeExpectedResult == GradeActualResult)
+				return a.GetFirstMultivector() * b.GetFirstMultivector() + LeftContraction(a.others, b);
+			else
+				return LeftContraction(a.others, b);
+		}
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr auto RightContraction(FirstMultivector a, SecondMultivector b)
+	{
+		if constexpr (std::is_arithmetic_v< FirstMultivector> || std::is_arithmetic_v< SecondMultivector>) // TODO this with concepts
+			return a * b;
+		else if constexpr (FirstMultivector::IsZeroMultivector || SecondMultivector::IsZeroMultivector)
+			return Multivector<>{};
+		else
+		{
+			constexpr int Grade1 = FirstMultivector::FirstBaseVectorGrade;
+			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
+			constexpr int GradeExpectedResult = Grade1 - Grade2;
+			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			if constexpr (GradeExpectedResult == GradeActualResult)
+				return a.GetFirstMultivector() * b.GetFirstMultivector() + RightContraction(a.others, b);
+			else
+				return RightContraction(a.others, b);
+		}
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr auto InnerProduct(FirstMultivector a, SecondMultivector b)
+	{
+		if constexpr (std::is_arithmetic_v< FirstMultivector> || std::is_arithmetic_v< SecondMultivector>) // TODO this with concepts
+			return a * b;
+		else if constexpr (FirstMultivector::IsZeroMultivector || SecondMultivector::IsZeroMultivector)
+			return Multivector<>{};
+		else
+		{
+			constexpr int Grade1 = FirstMultivector::FirstBaseVectorGrade;
+			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
+			constexpr int GradeExpectedResult = (Grade1 > Grade2) ? Grade1 - Grade2 : Grade2 - Grade1;
+			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			if constexpr (GradeExpectedResult == GradeActualResult)
+				return a.GetFirstMultivector() * b.GetFirstMultivector() + InnerProduct(a.others, b);
+			else
+				return InnerProduct(a.others, b);
+		}
+	}
+
+	template<typename FirstMultivector, typename SecondMultivector>
+	inline constexpr auto StarProduct(FirstMultivector a, SecondMultivector b)
+	{
+		if constexpr (std::is_arithmetic_v< FirstMultivector> || std::is_arithmetic_v< SecondMultivector>) // TODO this with concepts
+			return a * b;
+		else if constexpr (FirstMultivector::IsZeroMultivector || SecondMultivector::IsZeroMultivector)
+			return Multivector<>{};
+		else
+		{
+			constexpr int Grade1 = FirstMultivector::FirstBaseVectorGrade;
+			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
+			if constexpr(Grade1 == Grade2)
+				return a.GetFirstMultivector() * b.GetFirstMultivector() + StarProduct(a.others, b);
+			else
+				return StarProduct(a.others, b);
 		}
 	}
 }

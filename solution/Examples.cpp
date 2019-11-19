@@ -521,7 +521,7 @@ TEST_CASE("3D Multivectors")
 		auto v_xpx = x + x;
 
 		auto v_xpy = x + y;
-		auto v_ypx = x + y;
+		auto v_ypx = y + x;
 
 		auto v_xpxz = x + xz;
 		auto v_xzpx = xz + x;
@@ -531,15 +531,26 @@ TEST_CASE("3D Multivectors")
 
 
 		REQUIRE(IsType<X>(v_xpx));
+		REQUIRE(v_xpx.GetFactor(x) == 2);
+
 
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 1>>>(v_xpy));
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 1>>>(v_ypx));
+		REQUIRE(v_xpy.GetFactor(x) == 1);
+		REQUIRE(v_xpy.GetFactor(y) == 1);
+		REQUIRE(v_xpy == v_ypx);
 
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 0, 2>>>(v_xpxz));
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D, 0>, BaseVector<Euclidean3D, 0, 2>>>(v_xzpx));
+		REQUIRE(v_xpxz.GetFactor(x) == 1);
+		REQUIRE(v_xpxz.GetFactor(xz) == 1);
+		REQUIRE(v_xpxz == v_xzpx);
 
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_xp1));
 		REQUIRE(IsType<Multivector<BaseVector<Euclidean3D>, BaseVector<Euclidean3D, 0>>>(v_1px));
+		REQUIRE(v_xp1.GetFactor(x) == 1);
+		REQUIRE(v_xp1.GetFactor<>() == 1);
+		REQUIRE(v_xp1 == v_1px);
 	}
 	
 
@@ -548,7 +559,7 @@ TEST_CASE("3D Multivectors")
 		auto v_xmx = x * x;
 
 		auto v_xmy = x * y;
-		auto v_ymx = x * y;
+		auto v_ymx = y * x;
 
 		auto v_xmxz = x * xz;
 		auto v_xzmx = xz * x;
@@ -558,15 +569,57 @@ TEST_CASE("3D Multivectors")
 
 
 		REQUIRE(IsType<Scalar>(v_xmx));
+		REQUIRE(v_xmx.GetFactor<>() == 1);
+		REQUIRE(v_xmx == 1);
 
 		REQUIRE(IsType<XY>(v_xmy));
 		REQUIRE(IsType<XY>(v_ymx));
+		REQUIRE(v_xmy.GetFactor(xy) == 1);
+		REQUIRE(v_ymx.GetFactor(xy) == -1);
+		REQUIRE(v_xmy == -v_ymx);
 
 		REQUIRE(IsType<Z>(v_xmxz));
 		REQUIRE(IsType<Z>(v_xzmx));
+		REQUIRE(v_xmxz.GetFactor(z) == 1);
+		REQUIRE(v_xzmx.GetFactor(z) == -1);
+		REQUIRE(v_xmxz == -v_xzmx);
 
 		REQUIRE(IsType<X>(v_xm1));
 		REQUIRE(IsType<X>(v_1mx));
+		REQUIRE(v_xm1.GetFactor(x) == 2);
+		REQUIRE(v_xm1 == v_1mx);
+	}
+
+
+	SECTION("Multivector Outer Product")
+	{
+		auto v_xmx = OuterProduct(x, x);
+
+		auto v_xmy = OuterProduct(x, y);
+		auto v_ymx = OuterProduct(y, x);
+
+		auto v_xmxz = OuterProduct(x, xz);
+		auto v_xzmx = OuterProduct(xz, x);
+
+		auto v_xm1 = OuterProduct(x, 2);
+		auto v_1mx = OuterProduct(2, x);
+
+
+		REQUIRE(v_xmx == 0);
+
+		REQUIRE(IsType<XY>(v_xmy));
+		REQUIRE(IsType<XY>(v_ymx));
+		REQUIRE(v_xmy.GetFactor(xy) == 1);
+		REQUIRE(v_ymx.GetFactor(xy) == -1);
+		REQUIRE(v_xmy == -v_ymx);
+
+		REQUIRE(v_xmxz == 0);
+		REQUIRE(v_xmxz == -v_xzmx);
+
+		REQUIRE(IsType<X>(v_xm1));
+		REQUIRE(IsType<X>(v_1mx));
+		REQUIRE(v_xm1.GetFactor(x) == 2);
+		REQUIRE(v_xm1 == v_1mx);
 	}
 
 }
