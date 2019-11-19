@@ -123,7 +123,7 @@ TEST_CASE("2d non-euclidean multiplication", "[2d non-euclidean]")
 	using Euclidean2D = Signature<double, 1, 1>;
 	using Scalar = BaseVector<Euclidean2D>;
 	using X = BaseVector<Euclidean2D, 0>;
-	using N = BaseVector<Euclidean2D, 1>;
+	using N = BaseVector<Euclidean2D, 1>; // n * n = -1
 	using XN = BaseVector<Euclidean2D, 0, 1>;
 		
 	SECTION("scalar * scalar")
