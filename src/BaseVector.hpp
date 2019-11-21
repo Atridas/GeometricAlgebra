@@ -12,6 +12,10 @@ namespace GA
 		static_assert(sizeof...(Indexes) == 0);
 
 		static constexpr int Grade = 0;
+		static constexpr bool IsScalar = true;
+		static constexpr bool IsVector = false;
+		static constexpr bool IsAntivector = false;
+		static constexpr bool IsPseudoscalar = (Signature::Positive == 0 && Signature::Negative == 0);
 		using BaseScalar = BaseVector<Signature>;
 		using T = typename Signature::Type;
 
@@ -66,6 +70,10 @@ namespace GA
 	struct BaseVector<Signature, FirstIndex, Indexes...>
 	{
 		static constexpr int Grade = sizeof...(Indexes) + 1;
+		static constexpr bool IsScalar = false;
+		static constexpr bool IsVector = (Grade == 1);
+		static constexpr bool IsAntivector = (Grade == Signature::Positive + Signature::Negative - 1);
+		static constexpr bool IsPseudoscalar = (Grade == Signature::Positive + Signature::Negative);
 		using BaseScalar = BaseVector<Signature>;
 		using T = typename Signature::Type;
 

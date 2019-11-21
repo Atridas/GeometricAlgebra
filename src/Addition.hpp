@@ -8,12 +8,29 @@ namespace GA
 	template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
 	inline constexpr auto Multivector<FirstBaseVector, BaseVectors...>::operator+(Multivector<FirstOtherBaseVector, OtherBaseVectors...> v) const noexcept
 	{
+		using OtherMultivector = Multivector<FirstOtherBaseVector, OtherBaseVectors...>;
 		if constexpr (FirstBaseVector{} == FirstOtherBaseVector{})
-			return Multivector<FirstBaseVector>{ value + v.value } +(others + v.others);
+		{
+			if constexpr (FirstBaseVector::IsScalar)
+				return Scalar<FirstBaseVector>{ value + v.value } + (others + v.others);
+			else if constexpr (FirstBaseVector::IsVector)
+				return Vector<FirstBaseVector>{ value + v.value } + (others + v.others);
+			else if constexpr (FirstBaseVector::IsGuaranteedBlade)
+				return Blade<FirstBaseVector>{ value + v.value } + (others + v.others);
+			else
+				return Multivector<FirstBaseVector>{ value + v.value } + (others + v.others);
+		}
 		else if constexpr (FirstBaseVector{} < FirstOtherBaseVector{} && sizeof...(BaseVectors) == 0)
-			return Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v};
+		{
+			if constexpr (IsVector && OtherMultivector::IsVector)
+				return Vector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v});
+			else if constexpr (IsGuaranteedBlade && OtherMultivector::IsGuaranteedBlade && FirstBaseVectorGrade == OtherMultivector::FirstBaseVectorGrade)
+				return Blade<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v});
+			else
+				return Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v};
+		}
 		else  if constexpr (FirstBaseVector{} < FirstOtherBaseVector{})
-			return Multivector<FirstBaseVector>{ value } +(others + v);
+			return Multivector<FirstBaseVector>{ value } + (others + v);
 		else
 			return Multivector<FirstOtherBaseVector>{ v.value } +(*this + v.others);
 	}
