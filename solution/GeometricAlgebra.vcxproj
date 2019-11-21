@@ -158,7 +158,14 @@
     <ClCompile Include="Examples.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\Addition.hpp" />
+    <ClInclude Include="..\src\BaseVector.hpp" />
+    <ClInclude Include="..\src\BasicGeometricOperators.hpp" />
+    <ClInclude Include="..\src\Comparisons.hpp" />
     <ClInclude Include="..\src\GeometricAlgebra.hpp" />
+    <ClInclude Include="..\src\GeometricProduct.hpp" />
+    <ClInclude Include="..\src\Multivector.hpp" />
+    <ClInclude Include="..\src\Signature.hpp" />
     <ClInclude Include="catch.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
