@@ -638,8 +638,6 @@ TEST_CASE("3D Multivectors")
 
 	SECTION("Versor Product")
 	{
-		//auto versor = (x + y + 0.5 * z) * x;
-		//REQUIRE(versor == 1 - xy - 0.5 * xz);
 		auto versor = (x + y) * x;
 		REQUIRE(versor == 1 - xy);
 
@@ -654,5 +652,50 @@ TEST_CASE("3D Multivectors")
 		REQUIRE(rotated1 == y);
 		REQUIRE(rotated2 == -x);
 	}
+}
+
+TEST_CASE("3D Conformal")
+{
+	using namespace GA;
+	using Conformal3D = Signature<double, 4, 1>;
+	using Scalar = Blade<BaseVector<Conformal3D>>;
+	using X = Blade<BaseVector<Conformal3D, 0>>;
+	using Y = Blade < BaseVector<Conformal3D, 1>>;
+	using Z = Blade < BaseVector<Conformal3D, 2>>;
+	using E = Blade < BaseVector<Conformal3D, 3>>;
+	using N = Blade < BaseVector<Conformal3D, 4>>;
+
+	Scalar s{ 1 };
+	X x{ 1 };
+	Y y{ 1 };
+	Z z{ 1 };
+	E e{ 1 };
+	N n{ 1 };
+
+	auto o = 0.5 * e + 0.5 * n;
+	auto inf = n - e;
+
+	REQUIRE(o * o == 0);
+	REQUIRE(inf * inf == 0);
+
+	REQUIRE(InnerProduct(o, inf) == -1);
+	REQUIRE(InnerProduct(inf, o) == -1);
+	REQUIRE(InnerProduct(o, -inf) == 1);
+	REQUIRE(InnerProduct(-inf, o) == 1);
+
+	REQUIRE(OuterProduct(o, inf) == e * n);
+
+	auto Weight = [inf](auto v) { return InnerProduct(-inf, v).GetFactor<>(); };
+
+	REQUIRE(Weight(o) == 1);
+	REQUIRE(Weight(inf) == 0);
+
+	auto CreateConformalPoint = [o, inf](auto p) { return ProjectGrade<1>(o + p + 0.5 * p * p * inf); };
+
+	auto cx = CreateConformalPoint(x);
+	auto cx2y = CreateConformalPoint(x + 2 * y);
+
+	REQUIRE(Weight(cx) == 1);
+	REQUIRE(Weight(cx2y) == 1);
 }
 
