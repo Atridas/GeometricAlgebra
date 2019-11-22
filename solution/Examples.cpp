@@ -635,5 +635,24 @@ TEST_CASE("3D Multivectors")
 		REQUIRE(v_xm1 == v_1mx);
 	}
 
+
+	SECTION("Versor Product")
+	{
+		//auto versor = (x + y + 0.5 * z) * x;
+		//REQUIRE(versor == 1 - xy - 0.5 * xz);
+		auto versor = (x + y) * x;
+		REQUIRE(versor == 1 - xy);
+
+		auto inverseVersor = Inverse(versor);
+
+		auto remult = versor * inverseVersor;
+		REQUIRE(remult.value == 1);
+
+		auto rotated1 = VersorProduct(versor, x);
+		auto rotated2 = VersorProduct(versor, y);
+
+		REQUIRE(rotated1 == y);
+		REQUIRE(rotated2 == -x);
+	}
 }
 

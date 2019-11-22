@@ -175,7 +175,7 @@ namespace GA
 
 		static constexpr int Grade = FirstBaseVector::Grade;
 
-		static_assert(sizeof...(BaseVectors) == 0 || Blade<SecondBaseVector, BaseVectors...>::Grade == Grade);
+		static_assert(Blade<SecondBaseVector, BaseVectors...>::Grade == Grade);
 
 		explicit Blade(Multivector<FirstBaseVector, SecondBaseVector, BaseVectors...> m) : Versor<FirstBaseVector, SecondBaseVector, BaseVectors...>(m) {}
 	};

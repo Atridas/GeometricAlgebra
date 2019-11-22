@@ -126,4 +126,19 @@ namespace GA
 		else
 			return Blade<BaseVectors...>(v.CreateFirstMultivector(-v.value) + -v.others);
 	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+
+	template <typename... BaseVectors, typename TSecondElement>
+	inline constexpr auto operator-(Multivector<BaseVectors...> a, TSecondElement b) noexcept
+	{
+		return a + -b;
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr auto operator-(typename Multivector<BaseVectors...>::T a, Multivector<BaseVectors...> b) noexcept
+	{
+		return a + -b;
+	}
 }
