@@ -6,18 +6,18 @@ namespace GA
 {
 	// ----------------------------------------------------------------------------------------------------------------
 
-	template <int Grade, typename... BaseVectors>
-	inline constexpr auto ProjectGrade(Multivector<BaseVectors...> v) noexcept
+	template <int Grade, typename TMultivector>
+	inline constexpr auto ProjectGrade(TMultivector v) noexcept
 	{
-		if constexpr (sizeof...(BaseVectors) == 0)
+		if constexpr (TMultivector::IsZeroMultivector)
 			return Multivector<>{};
-		else if constexpr (Multivector<BaseVectors...>::FirstBaseVectorGrade == Grade)
+		else if constexpr (TMultivector::FirstBaseVectorGrade == Grade)
 		{
-			return v.GetFirstMultivector() + ProjectGrade<Grade>(v.others);
+			return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(v.GetFirstMultivector() + ProjectGrade<Grade>(v.others));
 		}
 		else
 		{
-			return ProjectGrade<Grade>(v.others);
+			return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(ProjectGrade<Grade>(v.others));
 		}
 	}
 
@@ -35,9 +35,9 @@ namespace GA
 		{
 			constexpr int Grade = TMultivector::FirstBaseVectorGrade;
 			if constexpr ( Grade % 2 == 0 )
-				return m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(m.GetFirstMultivector() + GradeInvolution(m.others));
 			else
-				return -m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(-m.GetFirstMultivector() + GradeInvolution(m.others));
 		}
 	}
 	
@@ -52,9 +52,9 @@ namespace GA
 		{
 			constexpr int Grade = TMultivector::FirstBaseVectorGrade;
 			if constexpr ( Grade % 4 == 0 || Grade % 4 == 1 )
-				return m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(m.GetFirstMultivector() + GradeInvolution(m.others));
 			else
-				return -m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(-m.GetFirstMultivector() + GradeInvolution(m.others));
 		}
 	}
 	
@@ -69,9 +69,9 @@ namespace GA
 		{
 			constexpr int Grade = TMultivector::FirstBaseVectorGrade;
 			if constexpr ( Grade % 4 == 0 || Grade % 4 == 3 )
-				return m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(m.GetFirstMultivector() + GradeInvolution(m.others));
 			else
-				return -m.GetFirstMultivector() + GradeInvolution(m.others);
+				return ConditionalCastTo<TMultivector::IsGuaranteedVersor, TMultivector::IsGuaranteedBlade>(-m.GetFirstMultivector() + GradeInvolution(m.others));
 		}
 	}
 
@@ -104,10 +104,11 @@ namespace GA
 			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
 			constexpr int GradeExpectedResult = Grade1 + Grade2;
 			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			constexpr bool BothBlades = FirstMultivector::IsGuaranteedBlade && SecondMultivector::IsGuaranteedBlade;
 			if constexpr (GradeExpectedResult == GradeActualResult)
-				return a.GetFirstMultivector() * b.GetFirstMultivector() + OuterProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(a.GetFirstMultivector() * b.GetFirstMultivector() + OuterProduct(a.others, b));
 			else
-				return OuterProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(OuterProduct(a.others, b));
 		}
 	}
 
@@ -124,10 +125,11 @@ namespace GA
 			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
 			constexpr int GradeExpectedResult = Grade2 - Grade1;
 			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			constexpr bool BothBlades = FirstMultivector::IsGuaranteedBlade && SecondMultivector::IsGuaranteedBlade;
 			if constexpr (GradeExpectedResult == GradeActualResult)
-				return a.GetFirstMultivector() * b.GetFirstMultivector() + LeftContraction(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(a.GetFirstMultivector() * b.GetFirstMultivector() + LeftContraction(a.others, b));
 			else
-				return LeftContraction(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(LeftContraction(a.others, b));
 		}
 	}
 
@@ -144,10 +146,11 @@ namespace GA
 			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
 			constexpr int GradeExpectedResult = Grade1 - Grade2;
 			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			constexpr bool BothBlades = FirstMultivector::IsGuaranteedBlade && SecondMultivector::IsGuaranteedBlade;
 			if constexpr (GradeExpectedResult == GradeActualResult)
-				return a.GetFirstMultivector() * b.GetFirstMultivector() + RightContraction(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(a.GetFirstMultivector() * b.GetFirstMultivector() + RightContraction(a.others, b));
 			else
-				return RightContraction(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(RightContraction(a.others, b));
 		}
 	}
 
@@ -164,10 +167,11 @@ namespace GA
 			constexpr int Grade2 = SecondMultivector::FirstBaseVectorGrade;
 			constexpr int GradeExpectedResult = (Grade1 > Grade2) ? Grade1 - Grade2 : Grade2 - Grade1;
 			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			constexpr bool BothBlades = FirstMultivector::IsGuaranteedBlade && SecondMultivector::IsGuaranteedBlade;
 			if constexpr (GradeExpectedResult == GradeActualResult)
-				return a.GetFirstMultivector() * b.GetFirstMultivector() + InnerProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(a.GetFirstMultivector() * b.GetFirstMultivector() + InnerProduct(a.others, b));
 			else
-				return InnerProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(InnerProduct(a.others, b));
 		}
 	}
 
@@ -181,10 +185,11 @@ namespace GA
 		else
 		{
 			constexpr int GradeActualResult = GradeFromMultiplyingMultivectors<FirstMultivector, SecondMultivector>();
+			constexpr bool BothBlades = FirstMultivector::IsGuaranteedBlade && SecondMultivector::IsGuaranteedBlade;
 			if constexpr (GradeActualResult == 0)
-				return CliffordConjugation(a.GetFirstMultivector()) * b.GetFirstMultivector() + ScalarProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(Reverse(a.GetFirstMultivector()) * b.GetFirstMultivector() + ScalarProduct(a.others, b));
 			else
-				return ScalarProduct(a.others, b);
+				return ConditionalCastToBlade<BothBlades>(ScalarProduct(a.others, b));
 		}
 	}
 }
