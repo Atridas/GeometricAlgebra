@@ -3,21 +3,17 @@
 namespace GA
 {
 
-	template <typename Signature>
-	struct Scalar;
 	template <typename... BaseVectors>
 	struct Versor;
 	template <typename... BaseVectors>
 	struct Blade;
-	template <typename... BaseVectors>
-	struct Vector;
 
 	template <typename... BaseVectors>
 	struct Multivector
 	{
 		static_assert(sizeof...(BaseVectors) == 0);
 		using T = int;
-		using BaseScalar = int;
+		using ScalarMultivector = int;
 		static constexpr int FirstBaseVectorGrade = 0;
 		static constexpr bool IsZeroMultivector = true;
 		static constexpr bool IsKVector = true;
@@ -26,6 +22,7 @@ namespace GA
 		static constexpr bool IsAntivector = false;
 		static constexpr bool IsPseudoscalar = false;
 		static constexpr bool IsGuaranteedBlade = true;
+		static constexpr bool IsGuaranteedVersor = true;
 
 		template<int... Indexes>
 		constexpr T GetFactor() const noexcept
@@ -40,42 +37,6 @@ namespace GA
 		}
 
 		template <typename... OtherBaseVectors>
-		constexpr Multivector< OtherBaseVectors...> operator+(Multivector<OtherBaseVectors...> v) const noexcept
-		{
-			return v;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Versor< OtherBaseVectors...> operator+(Versor<OtherBaseVectors...> v) const noexcept
-		{
-			return v;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Blade< OtherBaseVectors...> operator+(Blade<OtherBaseVectors...> v) const noexcept
-		{
-			return v;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Vector< OtherBaseVectors...> operator+(Vector<OtherBaseVectors...> v) const noexcept
-		{
-			return v;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Multivector< OtherBaseVectors...> operator-(Multivector<OtherBaseVectors...> v) const noexcept
-		{
-			return -v;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const noexcept
-		{
-			return Multivector<>{};
-		}
-
-		template <typename... OtherBaseVectors>
 		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
 	};
 
@@ -85,7 +46,7 @@ namespace GA
 		using TBaseVector = FirstBaseVector;
 		using T = typename TBaseVector::T;
 		static constexpr int FirstBaseVectorGrade = TBaseVector::Grade;
-		using BaseScalar = Scalar<typename TBaseVector::BaseScalar>;
+		using ScalarMultivector = Multivector<typename TBaseVector::BaseScalar>;
 		static constexpr bool IsZeroMultivector = false;
 		static constexpr bool IsKVector = (sizeof...(BaseVectors) == 0 || (Multivector<BaseVectors...>::FirstBaseVectorGrade == FirstBaseVectorGrade && Multivector<BaseVectors...>::IsKVector));
 		static constexpr bool IsScalar = IsKVector && TBaseVector::IsScalar;
@@ -93,6 +54,7 @@ namespace GA
 		static constexpr bool IsAntivector = IsKVector && TBaseVector::IsAntivector;
 		static constexpr bool IsPseudoscalar = IsKVector && TBaseVector::IsPseudoscalar;
 		static constexpr bool IsGuaranteedBlade = IsScalar || IsVector || IsAntivector || IsPseudoscalar;
+		static constexpr bool IsGuaranteedVersor = IsGuaranteedBlade;
 
 		T value;
 		Multivector<BaseVectors...> others;
@@ -133,26 +95,12 @@ namespace GA
 
 		constexpr Blade<FirstBaseVector> GetFirstMultivector() const noexcept
 		{
-			return Blade<FirstBaseVector>{ value }; // TODO vector
+			return Blade<FirstBaseVector>{ value };
 		}
 
 		constexpr Blade<FirstBaseVector> CreateFirstMultivector(T v) const noexcept
 		{
-			return Blade<FirstBaseVector>{ v }; // TODO vector
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Multivector<FirstBaseVector, BaseVectors...> operator+(Multivector<OtherBaseVectors...>) const noexcept
-		{
-			static_assert(sizeof...(OtherBaseVectors) == 0);
-			return *this;
-		}
-
-		template <typename... OtherBaseVectors>
-		constexpr Multivector<> operator*(Multivector<OtherBaseVectors...>) const noexcept
-		{
-			static_assert(sizeof...(OtherBaseVectors) == 0);
-			return Multivector<>{};
+			return Blade<FirstBaseVector>{ v };
 		}
 
 		template <typename FirstOtherBaseVector, typename... OtherBaseVectors>
@@ -174,19 +122,34 @@ namespace GA
 	template <typename... BaseVectors>
 	struct Versor : Multivector<BaseVectors...>
 	{
+		static constexpr bool IsGuaranteedBlade = false;
+		static constexpr bool IsGuaranteedVersor = true;
+
 		explicit Versor(Multivector<BaseVectors...> m) : Multivector<BaseVectors...>(m) {}
+
+		template <typename... OtherBaseVectors>
+		inline constexpr auto operator*(Versor<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename SingleBaseVector>
 	struct Versor<SingleBaseVector> : Multivector<SingleBaseVector>
 	{
+		static constexpr bool IsGuaranteedBlade = false;
+		static constexpr bool IsGuaranteedVersor = true;
+
 		explicit Versor(Multivector<SingleBaseVector> m) : Multivector<SingleBaseVector>(m) {}
 		explicit Versor(typename SingleBaseVector::T s) : Multivector<SingleBaseVector>{ s } {}
+
+		template <typename... OtherBaseVectors>
+		inline constexpr auto operator*(Versor<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename... BaseVectors>
 	struct Blade : Versor<BaseVectors...>
 	{
+		static constexpr bool IsGuaranteedBlade = true;
+		static constexpr bool IsGuaranteedVersor = true;
+
 		static constexpr int Grade = 0;
 		static_assert(Grade == 0);
 		explicit Blade(Multivector<BaseVectors...> m) : Versor<BaseVectors...>(m) {}
@@ -195,6 +158,9 @@ namespace GA
 	template <typename SingleBaseVector>
 	struct Blade<SingleBaseVector> : Versor<SingleBaseVector>
 	{
+		static constexpr bool IsGuaranteedBlade = true;
+		static constexpr bool IsGuaranteedVersor = true;
+
 		static constexpr int Grade = SingleBaseVector::Grade;
 
 		explicit Blade(Multivector<SingleBaseVector> m) : Versor<SingleBaseVector>(m) {}
@@ -204,6 +170,9 @@ namespace GA
 	template <typename FirstBaseVector, typename SecondBaseVector, typename... BaseVectors>
 	struct Blade<FirstBaseVector, SecondBaseVector, BaseVectors...> : Versor<FirstBaseVector, SecondBaseVector, BaseVectors...>
 	{
+		static constexpr bool IsGuaranteedBlade = true;
+		static constexpr bool IsGuaranteedVersor = true;
+
 		static constexpr int Grade = FirstBaseVector::Grade;
 
 		static_assert(sizeof...(BaseVectors) == 0 || Blade<SecondBaseVector, BaseVectors...>::Grade == Grade);
@@ -211,29 +180,82 @@ namespace GA
 		explicit Blade(Multivector<FirstBaseVector, SecondBaseVector, BaseVectors...> m) : Versor<FirstBaseVector, SecondBaseVector, BaseVectors...>(m) {}
 	};
 
-	template <typename BaseVector>
-	struct Scalar : Blade<BaseVector>
+
+
+	template <bool KnownVersor, bool KnownBlade, typename... BaseVectors>
+	inline constexpr auto ConditionalCastTo(Multivector<BaseVectors...> m)
 	{
-		static_assert(Blade<BaseVector>::Grade == 0);
+		if constexpr (KnownBlade || Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(m);
+		else if constexpr (KnownVersor)
+			return Versor<BaseVectors...>(m);
+		else
+			return m;
+	}
 
-		explicit Scalar(Multivector<BaseVector> m) : Blade<BaseVector>(m) {}
-		Scalar(typename BaseVector::T s) : Blade<BaseVector>(s) {}
-	};
-
-	template <typename... BaseVectors>
-	struct Vector : Blade<BaseVectors...>
+	template <bool KnownVersor, bool KnownBlade, typename... BaseVectors>
+	inline constexpr auto ConditionalCastTo(Versor<BaseVectors...> v)
 	{
-		static_assert(Blade<BaseVectors...>::Grade == 1);
+		if constexpr (KnownBlade || Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(v);
+		else
+			return v;
+	}
 
-		explicit Vector(Multivector<BaseVectors...> m) : Blade<BaseVectors...>(m) {}
-	};
-
-	template <typename SingleBaseVector>
-	struct Vector<SingleBaseVector> : Blade<SingleBaseVector>
+	template <bool KnownVersor, bool KnownBlade, typename... BaseVectors>
+	inline constexpr auto ConditionalCastTo(Blade<BaseVectors...> b)
 	{
-		static_assert(SingleBaseVector::Grade == 1);
+		return b;
+	}
 
-		explicit Vector(Multivector<SingleBaseVector> m) : Blade<SingleBaseVector>(m) {}
-		explicit Vector(typename SingleBaseVector::T s) : Blade<SingleBaseVector>(s) {}
-	};
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToVersor(Multivector<BaseVectors...> m)
+	{
+		if constexpr (Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(m);
+		else if constexpr (Cast)
+			return Versor<BaseVectors...>(m);
+		else
+			return m;
+	}
+
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToVersor(Versor<BaseVectors...> v)
+	{
+		if constexpr (Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(v);
+		else
+			return v;
+	}
+
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToVersor(Blade<BaseVectors...> b)
+	{
+		return b;
+	}
+
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToBlade(Multivector<BaseVectors...> m)
+	{
+		if constexpr (Cast || Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(m);
+		else
+			return m;
+	}
+
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToBlade(Versor<BaseVectors...> v)
+	{
+		if constexpr (Cast || Multivector < BaseVectors...>::IsGuaranteedBlade)
+			return Blade<BaseVectors...>(v);
+		else
+			return v;
+	}
+
+	template <bool Cast, typename... BaseVectors>
+	inline constexpr auto ConditionalCastToBlade(Blade<BaseVectors...> b)
+	{
+		return b;
+	}
+
 }

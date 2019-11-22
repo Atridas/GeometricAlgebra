@@ -11,7 +11,7 @@
 template<typename T, typename Q>
 bool IsType(Q q)
 {
-	return std::is_same_v<T, Q>;
+	return std::is_base_of_v<T, Q>;
 }
 
 
@@ -499,15 +499,16 @@ TEST_CASE("3D Multivectors")
 {
 	using namespace GA;
 	using Euclidean3D = Signature<double, 3>;
-	using Scalar = Multivector<BaseVector<Euclidean3D>>;
-	using X = Multivector<BaseVector<Euclidean3D, 0>>;
-	using Y = Multivector < BaseVector<Euclidean3D, 1>>;
-	using Z = Multivector < BaseVector<Euclidean3D, 2>>;
-	using XY = Multivector < BaseVector<Euclidean3D, 0, 1>>;
-	using XZ = Multivector < BaseVector<Euclidean3D, 0, 2>>;
-	using YZ = Multivector < BaseVector<Euclidean3D, 1, 2>>;
-	using XYZ = Multivector < BaseVector<Euclidean3D, 0, 1, 2>>;
+	using Scalar = Blade<BaseVector<Euclidean3D>>;
+	using X = Blade<BaseVector<Euclidean3D, 0>>;
+	using Y = Blade < BaseVector<Euclidean3D, 1>>;
+	using Z = Blade < BaseVector<Euclidean3D, 2>>;
+	using XY = Blade < BaseVector<Euclidean3D, 0, 1>>;
+	using XZ = Blade < BaseVector<Euclidean3D, 0, 2>>;
+	using YZ = Blade < BaseVector<Euclidean3D, 1, 2>>;
+	using XYZ = Blade < BaseVector<Euclidean3D, 0, 1, 2>>;
 
+	Scalar s{ 1 };
 	X x{ 1 };
 	Y y{ 1 };
 	Z z{ 1 };
@@ -588,6 +589,18 @@ TEST_CASE("3D Multivectors")
 		REQUIRE(IsType<X>(v_1mx));
 		REQUIRE(v_xm1.GetFactor(x) == 2);
 		REQUIRE(v_xm1 == v_1mx);
+
+
+
+		auto v_x_p_y_m_y_p_z = (x + y) * (y + z);
+
+		REQUIRE(v_x_p_y_m_y_p_z.GetFactor(s) == 1);
+		REQUIRE(v_x_p_y_m_y_p_z.GetFactor(xy) == 1);
+		REQUIRE(v_x_p_y_m_y_p_z.GetFactor(xz) == 1);
+		REQUIRE(v_x_p_y_m_y_p_z.GetFactor(yz) == 1);
+		REQUIRE(!decltype(v_x_p_y_m_y_p_z)::IsGuaranteedBlade);
+		REQUIRE(decltype(v_x_p_y_m_y_p_z)::IsGuaranteedVersor);
+
 	}
 
 

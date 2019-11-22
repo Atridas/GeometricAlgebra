@@ -16,6 +16,7 @@ namespace GA
 		static constexpr bool IsVector = false;
 		static constexpr bool IsAntivector = false;
 		static constexpr bool IsPseudoscalar = (Signature::Positive == 0 && Signature::Negative == 0);
+		static constexpr bool IsGuaranteedBlade = true;
 		using BaseScalar = BaseVector<Signature>;
 		using T = typename Signature::Type;
 
@@ -74,6 +75,7 @@ namespace GA
 		static constexpr bool IsVector = (Grade == 1);
 		static constexpr bool IsAntivector = (Grade == Signature::Positive + Signature::Negative - 1);
 		static constexpr bool IsPseudoscalar = (Grade == Signature::Positive + Signature::Negative);
+		static constexpr bool IsGuaranteedBlade = IsScalar || IsVector || IsAntivector || IsPseudoscalar;
 		using BaseScalar = BaseVector<Signature>;
 		using T = typename Signature::Type;
 

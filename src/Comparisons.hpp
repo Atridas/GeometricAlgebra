@@ -25,7 +25,7 @@ namespace GA
 		if constexpr (sizeof...(BaseVectors) == 0)
 			return scalar == 0;
 		else
-			return m == typename Multivector<BaseVectors...>::BaseScalar{ scalar };
+			return m == typename Multivector<BaseVectors...>::ScalarMultivector{ scalar };
 	}
 
 	template <typename... BaseVectors>
@@ -34,7 +34,7 @@ namespace GA
 		if constexpr (sizeof...(BaseVectors) == 0)
 			return scalar == 0;
 		else
-			return m == typename Multivector<BaseVectors...>::BaseScalar{ scalar };
+			return m == typename Multivector<BaseVectors...>::ScalarMultivector{ scalar };
 	}
 
 	template <typename... BaseVectors>

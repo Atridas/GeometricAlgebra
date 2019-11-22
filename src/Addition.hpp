@@ -11,20 +11,14 @@ namespace GA
 		using OtherMultivector = Multivector<FirstOtherBaseVector, OtherBaseVectors...>;
 		if constexpr (FirstBaseVector{} == FirstOtherBaseVector{})
 		{
-			if constexpr (FirstBaseVector::IsScalar)
-				return Scalar<FirstBaseVector>{ value + v.value } + (others + v.others);
-			else if constexpr (FirstBaseVector::IsVector)
-				return Vector<FirstBaseVector>{ value + v.value } + (others + v.others);
-			else if constexpr (FirstBaseVector::IsGuaranteedBlade)
+			if constexpr (FirstBaseVector::IsGuaranteedBlade)
 				return Blade<FirstBaseVector>{ value + v.value } + (others + v.others);
 			else
 				return Multivector<FirstBaseVector>{ value + v.value } + (others + v.others);
 		}
 		else if constexpr (FirstBaseVector{} < FirstOtherBaseVector{} && sizeof...(BaseVectors) == 0)
 		{
-			if constexpr (IsVector && OtherMultivector::IsVector)
-				return Vector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v});
-			else if constexpr (IsGuaranteedBlade && OtherMultivector::IsGuaranteedBlade && FirstBaseVectorGrade == OtherMultivector::FirstBaseVectorGrade)
+			if constexpr (IsGuaranteedBlade && OtherMultivector::IsGuaranteedBlade && FirstBaseVectorGrade == OtherMultivector::FirstBaseVectorGrade)
 				return Blade<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v});
 			else
 				return Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v};
@@ -44,9 +38,8 @@ namespace GA
 		}
 		else
 		{
-			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
-			using Q = typename Multivector<BaseVectors...>::T;
-			return BaseScalar{ (Q)scalar } +v;
+			using ScalarMultivector = typename Multivector<BaseVectors...>::ScalarMultivector;
+			return ScalarMultivector{ scalar } +v;
 		}
 	}
 
@@ -59,9 +52,49 @@ namespace GA
 		}
 		else
 		{
-			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
-			return BaseScalar{ scalar } +v;
+			using ScalarMultivector = typename Multivector<BaseVectors...>::ScalarMultivector;
+			return ScalarMultivector{ scalar } +v;
 		}
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template <typename... BaseVectors>
+	inline constexpr Multivector<BaseVectors...> operator+(Multivector<BaseVectors...> a, typename Multivector<> b) noexcept
+	{
+		return a;
+	}
+
+	template <typename FirstBaseVector, typename... BaseVectors>
+	inline constexpr Multivector<FirstBaseVector, BaseVectors...> operator+(Multivector<> a, typename Multivector<FirstBaseVector, BaseVectors...> b) noexcept
+	{
+		return b;
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template <typename... BaseVectors>
+	inline constexpr Versor<BaseVectors...> operator+(Versor<BaseVectors...> a, typename Multivector<> b) noexcept
+	{
+		return a;
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr Versor<BaseVectors...> operator+(Multivector<> a, typename Versor<BaseVectors...> b) noexcept
+	{
+		return b;
+	}
+	
+	template <typename... BaseVectors>
+	inline constexpr Blade<BaseVectors...> operator+(Blade<BaseVectors...> a, typename Multivector<> b) noexcept
+	{
+		return a;
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr Blade<BaseVectors...> operator+(Multivector<> a, typename Blade<BaseVectors...> b) noexcept
+	{
+		return b;
 	}
 
 	// ----------------------------------------------------------------------------------------------------------------
@@ -74,5 +107,23 @@ namespace GA
 			return v;
 		else
 			return v.CreateFirstMultivector(-v.value) + -v.others;
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr auto operator-(Versor<BaseVectors...> v) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return v;
+		else
+			return Versor<BaseVectors...>(v.CreateFirstMultivector(-v.value) + -v.others);
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr auto operator-(Blade<BaseVectors...> v) noexcept
+	{
+		if constexpr (sizeof...(BaseVectors) == 0)
+			return v;
+		else
+			return Blade<BaseVectors...>(v.CreateFirstMultivector(-v.value) + -v.others);
 	}
 }

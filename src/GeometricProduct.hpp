@@ -60,7 +60,14 @@ namespace GA
 	{
 		using FirstVectorResultType = decltype(FirstBaseVector{}.MultType(FirstOtherBaseVector{}));
 		constexpr int Sign = FirstBaseVector{}.MultSign(FirstOtherBaseVector{});
-		return Multivector<FirstVectorResultType>{Sign* value* v.value} +others * Multivector<FirstOtherBaseVector>{v.value} +*this * v.others;
+
+		auto Result = Multivector<FirstVectorResultType>{ Sign * value * v.value } +others * Multivector<FirstOtherBaseVector>{v.value} +*this * v.others;
+		using ResultType = decltype(Result);
+		using OtherMultivector = Multivector<FirstOtherBaseVector, OtherBaseVectors...>;
+		if constexpr (IsGuaranteedBlade && OtherMultivector::IsGuaranteedBlade)
+			return ConditionalCastToBlade< ResultType::IsKVector >(ConditionalCastToVersor<true>(Result));
+		else
+			return Result;
 	}
 
 	template <typename... BaseVectors>
@@ -72,9 +79,8 @@ namespace GA
 		}
 		else
 		{
-			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
-			using Q = typename Multivector<BaseVectors...>::T;
-			return BaseScalar{ (Q)scalar } *v;
+			using ScalarMultivector = typename Multivector<BaseVectors...>::ScalarMultivector;
+			return ScalarMultivector{ scalar } *v;
 		}
 	}
 
@@ -87,8 +93,40 @@ namespace GA
 		}
 		else
 		{
-			using BaseScalar = typename Multivector<BaseVectors...>::BaseScalar;
-			return BaseScalar{ scalar } *v;
+			using ScalarMultivector = typename Multivector<BaseVectors...>::ScalarMultivector;
+			return ScalarMultivector{ scalar } *v;
 		}
 	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template <typename... BaseVectors>
+	inline constexpr auto operator*(Multivector<BaseVectors...> a, typename Multivector<> b) noexcept
+	{
+		return b;
+	}
+
+	template <typename FirstBaseVector, typename... BaseVectors>
+	inline constexpr auto operator*(Multivector<> a, typename Multivector<FirstBaseVector, BaseVectors...> b) noexcept
+	{
+		return a;
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+
+	template <typename... BaseVectors>
+	template <typename... OtherBaseVectors>
+	inline constexpr auto Versor<BaseVectors...>::operator*(Versor<OtherBaseVectors...> o) const noexcept
+	{
+		return ConditionalCastToVersor<true>((Multivector<BaseVectors...>) *this * (Multivector<OtherBaseVectors...>)o);
+	}
+
+	template <typename SingleBaseVector>
+	template <typename... OtherBaseVectors>
+	inline constexpr auto Versor<SingleBaseVector>::operator*(Versor<OtherBaseVectors...> o) const noexcept
+	{
+		return ConditionalCastToVersor<true>((Multivector<SingleBaseVector>) *this * (Multivector<OtherBaseVectors...>)o);
+	}
+
 }
