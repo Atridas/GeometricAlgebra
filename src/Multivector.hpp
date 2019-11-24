@@ -24,6 +24,8 @@ namespace GA
 		static constexpr bool IsGuaranteedBlade = true;
 		static constexpr bool IsGuaranteedVersor = true;
 
+		constexpr Multivector() {}
+
 		template<int... Indexes>
 		constexpr T GetFactor() const noexcept
 		{
@@ -35,9 +37,6 @@ namespace GA
 		{
 			return Multivector<>{};
 		}
-
-		template <typename... OtherBaseVectors>
-		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename FirstBaseVector, typename... BaseVectors>
@@ -58,6 +57,10 @@ namespace GA
 
 		T value;
 		Multivector<BaseVectors...> others;
+
+		constexpr Multivector() : value(0), others() {}
+		constexpr explicit Multivector(T _value) : value(_value), others() {}
+		constexpr Multivector(T _value, Multivector<BaseVectors...> _others) : value(_value), others(_others) {}
 
 		template<int... Indexes>
 		constexpr T GetFactor() const noexcept
@@ -117,6 +120,9 @@ namespace GA
 
 		template <typename... OtherBaseVectors>
 		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
+
+		template <typename... OtherBaseVectors>
+		constexpr bool operator!=(Multivector<OtherBaseVectors...>) const noexcept;
 	};
 
 	template <typename... BaseVectors>
@@ -125,7 +131,7 @@ namespace GA
 		static constexpr bool IsGuaranteedBlade = false;
 		static constexpr bool IsGuaranteedVersor = true;
 
-		explicit Versor(Multivector<BaseVectors...> m) : Multivector<BaseVectors...>(m) {}
+		explicit constexpr Versor(Multivector<BaseVectors...> m) : Multivector<BaseVectors...>(m) {}
 
 		template <typename... OtherBaseVectors>
 		inline constexpr auto operator*(Versor<OtherBaseVectors...>) const noexcept;
@@ -137,8 +143,8 @@ namespace GA
 		static constexpr bool IsGuaranteedBlade = false;
 		static constexpr bool IsGuaranteedVersor = true;
 
-		explicit Versor(Multivector<SingleBaseVector> m) : Multivector<SingleBaseVector>(m) {}
-		explicit Versor(typename SingleBaseVector::T s) : Multivector<SingleBaseVector>{ s } {}
+		explicit constexpr Versor(Multivector<SingleBaseVector> m) : Multivector<SingleBaseVector>(m) {}
+		explicit constexpr Versor(typename SingleBaseVector::T s) : Multivector<SingleBaseVector>{ s } {}
 
 		template <typename... OtherBaseVectors>
 		inline constexpr auto operator*(Versor<OtherBaseVectors...>) const noexcept;
@@ -152,7 +158,7 @@ namespace GA
 
 		static constexpr int Grade = 0;
 		static_assert(Grade == 0);
-		explicit Blade(Multivector<BaseVectors...> m) : Versor<BaseVectors...>(m) {}
+		explicit constexpr Blade(Multivector<BaseVectors...> m) : Versor<BaseVectors...>(m) {}
 	};
 
 	template <typename SingleBaseVector>
@@ -163,8 +169,8 @@ namespace GA
 
 		static constexpr int Grade = SingleBaseVector::Grade;
 
-		explicit Blade(Multivector<SingleBaseVector> m) : Versor<SingleBaseVector>(m) {}
-		explicit Blade(typename SingleBaseVector::T s) : Versor<SingleBaseVector>(s) {}
+		explicit constexpr Blade(Multivector<SingleBaseVector> m) : Versor<SingleBaseVector>(m) {}
+		explicit constexpr Blade(typename SingleBaseVector::T s) : Versor<SingleBaseVector>(s) {}
 	};
 
 	template <typename FirstBaseVector, typename SecondBaseVector, typename... BaseVectors>
@@ -177,7 +183,7 @@ namespace GA
 
 		static_assert(Blade<SecondBaseVector, BaseVectors...>::Grade == Grade);
 
-		explicit Blade(Multivector<FirstBaseVector, SecondBaseVector, BaseVectors...> m) : Versor<FirstBaseVector, SecondBaseVector, BaseVectors...>(m) {}
+		explicit constexpr Blade(Multivector<FirstBaseVector, SecondBaseVector, BaseVectors...> m) : Versor<FirstBaseVector, SecondBaseVector, BaseVectors...>(m) {}
 	};
 
 

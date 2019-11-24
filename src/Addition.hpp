@@ -19,14 +19,14 @@ namespace GA
 		else if constexpr (FirstBaseVector{} < FirstOtherBaseVector{} && sizeof...(BaseVectors) == 0)
 		{
 			if constexpr (IsGuaranteedBlade && OtherMultivector::IsGuaranteedBlade && FirstBaseVectorGrade == OtherMultivector::FirstBaseVectorGrade)
-				return Blade<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v});
+				return Blade<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>(value, v));
 			else
 				return Multivector<FirstBaseVector, FirstOtherBaseVector, OtherBaseVectors...>{value, v};
 		}
 		else  if constexpr (FirstBaseVector{} < FirstOtherBaseVector{})
 			return Multivector<FirstBaseVector>{ value } + (others + v);
 		else
-			return Multivector<FirstOtherBaseVector>{ v.value } +(*this + v.others);
+			return Multivector<FirstOtherBaseVector>( v.value ) +(*this + v.others);
 	}
 
 	template <typename... BaseVectors>
@@ -95,6 +95,16 @@ namespace GA
 	inline constexpr Blade<BaseVectors...> operator+(Multivector<> a, typename Blade<BaseVectors...> b) noexcept
 	{
 		return b;
+	}
+
+	inline constexpr Blade<> operator+(Versor<> a, typename Versor<> b) noexcept
+	{
+		return Blade<>{a};
+	}
+
+	inline constexpr Blade<> operator+(Blade<> a, typename Blade<> b) noexcept
+	{
+		return a;
 	}
 
 	// ----------------------------------------------------------------------------------------------------------------

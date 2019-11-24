@@ -2,16 +2,102 @@
 //
 
 #include <type_traits>
+#include <tuple>
 
 #include <GeometricAlgebra.hpp>
 
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
 template<typename T, typename Q>
 bool IsType(Q q)
 {
 	return std::is_base_of_v<T, Q>;
+}
+
+
+namespace GA
+{
+
+	template<typename Signature, int FirstNum, int... Nums>
+	std::string GetVectorSuffix()
+	{
+		using namespace std::string_literals;
+
+		std::string others;
+		if constexpr (sizeof...(Nums) != 0)
+			others = GetVectorSuffix< Signature, Nums...>();
+		else
+			others = ""s;
+
+		if constexpr (Signature::Positive == FirstNum)
+			return "n"s + others;
+		else if constexpr (Signature::Positive == FirstNum + 1 && Signature::Negative != 0)
+			return "e"s + others;
+		else if constexpr (FirstNum == 0)
+			return "x"s + others;
+		else if constexpr (FirstNum == 1)
+			return "y"s + others;
+		else if constexpr (FirstNum == 2)
+			return "z"s + others;
+		else
+			return "k"s + others;
+	}
+
+
+
+	template<typename Signature, int... Nums, typename... Others>
+	std::string to_string(GA::Multivector<GA::BaseVector<Signature, Nums...>, Others...> const& value)
+	{
+		using namespace std::string_literals;
+
+		if (value.value == 0)
+		{
+			if constexpr (sizeof...(Others) != 0)
+				return GA::to_string(value.others);
+			else
+				return ""s;
+		}
+		else
+		{
+			std::string result = std::to_string(value.value);
+			if constexpr (sizeof...(Nums) != 0)
+			{
+				result += " "s + GetVectorSuffix< Signature, Nums...>();
+			}
+			if constexpr (sizeof...(Others) != 0)
+			{
+				result += " + "s + GA::to_string(value.others);
+			}
+			return result;
+		}
+	}
+
+	std::string to_string(GA::Multivector<> const& value)
+	{
+		using namespace std::string_literals;
+		return "0"s;
+	}
+}
+
+namespace Catch {
+	template<typename... BaseVectors>
+	struct StringMaker<GA::Multivector<BaseVectors...>> {
+		static std::string convert(GA::Multivector<BaseVectors...> const& value) {
+			return GA::to_string(value);
+		}
+	};
+	template<typename... BaseVectors>
+	struct StringMaker<GA::Versor<BaseVectors...>> {
+		static std::string convert(GA::Versor<BaseVectors...> const& value) {
+			return GA::to_string(value);
+		}
+	};
+	template<typename... BaseVectors>
+	struct StringMaker<GA::Blade<BaseVectors...>> {
+		static std::string convert(GA::Blade<BaseVectors...> const& value) {
+			return GA::to_string(value);
+		}
+	};
 }
 
 
@@ -697,5 +783,65 @@ TEST_CASE("3D Conformal")
 
 	REQUIRE(Weight(cx) == 1);
 	REQUIRE(Weight(cx2y) == 1);
+
+	SECTION("Point Pairs")
+	{
+		auto SeparatePointPairs = [inf](auto pointPair)
+		{
+			auto weight = -LeftContraction(inf, pointPair);
+			auto invWeight = Inverse(weight);
+
+			auto ppSquared = InnerProduct(pointPair, pointPair);
+			double pplen = std::sqrt(ppSquared.value);
+
+			auto p1 = (pointPair - pplen) * invWeight;
+			auto p2 = (pointPair + pplen) * invWeight;
+
+			return std::make_pair(p1, p2);
+		};
+
+
+		auto pointPair1 = OuterProduct(CreateConformalPoint(x + y), CreateConformalPoint(x - z));
+
+		auto [p1, p2] = SeparatePointPairs(pointPair1);
+
+
+		REQUIRE(p1 == CreateConformalPoint(x + y));
+		REQUIRE(p2 == CreateConformalPoint(x - z));
+	}
+
+	SECTION("Circles")
+	{
+		auto circle1 = OuterProduct(CreateConformalPoint(x + y), CreateConformalPoint(x - y), CreateConformalPoint(2 * x));
+		auto circle2 = OuterProduct(CreateConformalPoint(x + 2 * y), CreateConformalPoint(x - 2 * y), CreateConformalPoint(3 * x));
+
+		REQUIRE(OuterProduct(circle1, o) == 0); // origin pertains to the circle
+		REQUIRE(OuterProduct(circle1, CreateConformalPoint(-x)) != 0);
+
+		REQUIRE(OuterProduct(circle2, o) != 0); // origin does not pertain to the circle
+		REQUIRE(OuterProduct(circle2, CreateConformalPoint(-x)) == 0);
+	}
+
+	SECTION("Lines")
+	{
+		auto line1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(2 * x + y), inf);
+		auto line2 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + y), inf);
+
+		auto direction1 = RightContraction(LeftContraction(inf, line1), o);
+		auto direction2 = RightContraction(LeftContraction(inf, line2), o);
+
+		REQUIRE(OuterProduct(line1, o) != 0); // none go through the origin
+		REQUIRE(OuterProduct(line2, o) != 0);
+
+
+		REQUIRE(OuterProduct(line1, CreateConformalPoint(-y)) == 0);
+		REQUIRE(OuterProduct(line2, CreateConformalPoint(-y)) != 0);
+
+		REQUIRE(OuterProduct(line1, CreateConformalPoint(x - y)) != 0);
+		REQUIRE(OuterProduct(line2, CreateConformalPoint(x - y)) == 0);
+
+		REQUIRE(direction1 == x + y);
+		REQUIRE(direction2 == y);
+	}
 }
 

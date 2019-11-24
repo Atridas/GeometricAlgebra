@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Examples.cpp" />
+    <ClCompile Include="TestsMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Addition.hpp" />

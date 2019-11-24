@@ -38,10 +38,37 @@ namespace GA
 	}
 
 	template <typename... BaseVectors>
-	template <typename... OtherBaseVectors>
-	inline constexpr bool Multivector<BaseVectors...>::operator==(Multivector<OtherBaseVectors...> m) const noexcept
+	inline constexpr bool operator==(Multivector<>, Multivector<BaseVectors...> m) noexcept
 	{
-		static_assert(sizeof...(BaseVectors) == 0);
 		return m == 0;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------------
+
+
+	template <typename FirstBaseVector, typename... BaseVectors>
+	template <typename... OtherBaseVectors>
+	inline constexpr bool Multivector<FirstBaseVector, BaseVectors...>::operator!=(Multivector<OtherBaseVectors...> m) const noexcept
+	{
+		return !(*this == m);
+	}
+
+
+	template <typename... BaseVectors>
+	inline constexpr bool operator!=(Multivector<BaseVectors...> m, typename Multivector<BaseVectors...>::T scalar) noexcept
+	{
+		return !(m == scalar);
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr bool operator!=(typename Multivector<BaseVectors...>::T scalar, Multivector<BaseVectors...> m) noexcept
+	{
+		return !(m == scalar);
+	}
+
+	template <typename... BaseVectors>
+	inline constexpr bool operator!=(Multivector<>, Multivector<BaseVectors...> m) noexcept
+	{
+		return !(m == 0);
 	}
 }

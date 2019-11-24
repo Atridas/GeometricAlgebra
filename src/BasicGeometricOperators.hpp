@@ -113,6 +113,13 @@ namespace GA
 		}
 	}
 
+
+	template<typename FirstMultivector, typename SecondMultivector, typename ThirdMultivector, typename... OtherMultivectors>
+	inline constexpr auto OuterProduct(FirstMultivector a, SecondMultivector b, ThirdMultivector c, OtherMultivectors... d)
+	{
+		return OuterProduct(a, OuterProduct(b, c, d...));
+	}
+
 	template<typename FirstMultivector, typename SecondMultivector>
 	inline constexpr auto LeftContraction(FirstMultivector a, SecondMultivector b)
 	{
