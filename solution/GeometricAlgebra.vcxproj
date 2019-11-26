@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConformalTests.cpp" />
     <ClCompile Include="Examples.cpp" />
     <ClCompile Include="TestsMain.cpp" />
   </ItemGroup>
