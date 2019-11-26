@@ -10,7 +10,7 @@ namespace GA
 	{
 		if constexpr (sizeof...(OtherBaseVectors) == 0)
 		{
-			return GetFactor<>() == 0 && others == m;
+			return value == 0 && others == m;
 		}
 		else
 		{

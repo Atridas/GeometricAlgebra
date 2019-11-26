@@ -208,6 +208,22 @@ namespace GA
 	// ----------------------------------------------------------------------------------------------------------------
 
 	template<typename... BaseVectors>
+	inline constexpr auto Normalized(Versor<BaseVectors...> v)
+	{
+		auto NormSquared = ScalarProduct(v, v);
+		return ConditionalCastToVersor<true>(v * std::sqrt(1 / NormSquared.value));
+	}
+
+	template<typename... BaseVectors>
+	inline constexpr auto Normalized(Blade<BaseVectors...> v)
+	{
+		auto NormSquared = ScalarProduct(v, v);
+		return ConditionalCastToBlade<true>(v * std::sqrt(1 / NormSquared.value));
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------
+
+	template<typename... BaseVectors>
 	inline constexpr auto Inverse(Versor<BaseVectors...> v)
 	{
 		auto NormSquared = ScalarProduct(v, v);

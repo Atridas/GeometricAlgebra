@@ -55,7 +55,7 @@ namespace GA
 			if constexpr (sizeof...(Others) != 0)
 				return GA::to_string(value.others);
 			else
-				return ""s;
+				return "0"s;
 		}
 		else
 		{
@@ -777,12 +777,27 @@ TEST_CASE("3D Conformal")
 	REQUIRE(Weight(inf) == 0);
 
 	auto CreateConformalPoint = [o, inf](auto p) { return ProjectGrade<1>(o + p + 0.5 * p * p * inf); };
+	auto NormalizeConformalPoint = [inf](auto p) { return p * Inverse(-InnerProduct(inf, p)); };
 
 	auto cx = CreateConformalPoint(x);
 	auto cx2y = CreateConformalPoint(x + 2 * y);
 
 	REQUIRE(Weight(cx) == 1);
 	REQUIRE(Weight(cx2y) == 1);
+
+	// --- TODO: move this to it's own header -------------------------------------------------------------------
+
+	auto CreateTranslator = [inf](auto t)
+	{
+		return ConditionalCastToVersor<true>(1 - 0.5 * t * inf);
+	};
+
+	auto CreateRotatorAroundTheOrigin = [](double angle, auto planeOfRotation)
+	{
+		return ConditionalCastToVersor<true>(std::cos(0.5 * angle) - std::sin(0.5 * angle) * Normalized(planeOfRotation));
+	};
+
+	// ----------------------------------------------------------------------------------------------------------
 
 	SECTION("Point Pairs")
 	{
@@ -842,6 +857,228 @@ TEST_CASE("3D Conformal")
 
 		REQUIRE(direction1 == x + y);
 		REQUIRE(direction2 == y);
+	}
+
+	SECTION("Planes")
+	{
+		auto plane1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + y), CreateConformalPoint(x + z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + y), CreateConformalPoint(2 * x + z), inf);
+
+		auto direction1 = RightContraction(LeftContraction(inf, plane1), o);
+		auto direction2 = RightContraction(LeftContraction(inf, plane2), o);
+
+		REQUIRE(OuterProduct(plane1, o) != 0); // none go through the origin
+		REQUIRE(OuterProduct(plane2, o) != 0);
+
+
+		REQUIRE(OuterProduct(plane1, CreateConformalPoint(x + 4 * y + 5 * z)) == 0);
+		REQUIRE(OuterProduct(plane2, CreateConformalPoint(x + 4 * y + 5 * z)) != 0);
+
+		REQUIRE(OuterProduct(plane1, CreateConformalPoint(-z)) != 0);
+		REQUIRE(OuterProduct(plane2, CreateConformalPoint(-z)) == 0);
+
+		REQUIRE(direction1 == y*z);
+		REQUIRE(direction2 == -x*y + y*z);
+	}
+
+
+	SECTION("Translation")
+	{
+		auto plane1 = OuterProduct(o, CreateConformalPoint(y), CreateConformalPoint(z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + z), CreateConformalPoint(x + y), inf);
+
+		auto translator = plane2 * plane1;
+
+		REQUIRE(Normalized(translator) == CreateTranslator(2*x));
+
+		auto p1 = VersorProduct(translator, o);
+		auto p2 = VersorProduct(translator, p1);
+		auto p3 = VersorProduct(translator, p2);
+
+		REQUIRE(p1 == CreateConformalPoint(2 * x));
+		REQUIRE(p2 == CreateConformalPoint(4 * x));
+		REQUIRE(p3 == CreateConformalPoint(6 * x));
+	}
+
+
+	SECTION("Rotation at center")
+	{
+		auto plane1 = OuterProduct(o, CreateConformalPoint(y), CreateConformalPoint(z), inf);
+		auto plane2 = OuterProduct(o, CreateConformalPoint(x + z), CreateConformalPoint(y), inf);
+
+		auto rotator = plane2 * plane1;
+
+		REQUIRE(Normalized(rotator) == CreateRotatorAroundTheOrigin(3.1415926535898 * 0.5, z * x));
+
+		auto p1 = VersorProduct(rotator, CreateConformalPoint(-x));
+		auto p2 = VersorProduct(rotator, p1);
+		auto p3 = VersorProduct(rotator, p2);
+		auto p4 = VersorProduct(rotator, p3);
+
+		REQUIRE(p1 == CreateConformalPoint(z));
+		REQUIRE(p2 == CreateConformalPoint(x));
+		REQUIRE(p3 == CreateConformalPoint(-z));
+		REQUIRE(p4 == CreateConformalPoint(-x));
+	}
+
+	SECTION("Rotation at x")
+	{
+		auto plane1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + y), CreateConformalPoint(x + z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(2 * x + z), CreateConformalPoint(x + y), inf);
+
+		auto rotator = plane2 * plane1;
+
+		// REQUIRE(Normalized(rotator) == std::sqrt(0.5) - std::sqrt(0.5) * (1 - x * inf) * z * x); // TODO comparer with an epsilon
+
+		auto p1 = VersorProduct(rotator, o);
+		auto p2 = VersorProduct(rotator, p1);
+		auto p3 = VersorProduct(rotator, p2);
+		auto p4 = VersorProduct(rotator, p3);
+
+		REQUIRE(p1 == CreateConformalPoint(x + z));
+		REQUIRE(p2 == CreateConformalPoint(2 * x));
+		REQUIRE(p3 == CreateConformalPoint(x - z));
+		REQUIRE(p4 == o);
+	}
+
+	SECTION("Rotation at 2x")
+	{
+		auto plane1 = OuterProduct(CreateConformalPoint(2 * x), CreateConformalPoint(2 * x + y), CreateConformalPoint(2 * x + z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(2 * x), CreateConformalPoint(3 * x + z), CreateConformalPoint(2 * x + y), inf);
+
+		auto rotator = plane2 * plane1;
+
+		REQUIRE(Normalized(rotator) == std::sqrt(0.5) - std::sqrt(0.5) * (1 - 2 * x * inf) * z * x);
+
+		auto p1 = VersorProduct(rotator, o);
+		auto p2 = VersorProduct(rotator, p1);
+		auto p3 = VersorProduct(rotator, p2);
+		auto p4 = VersorProduct(rotator, p3);
+
+		REQUIRE(p1 == CreateConformalPoint(2 * x + 2 * z));
+		REQUIRE(p2 == CreateConformalPoint(4 * x));
+		REQUIRE(p3 == CreateConformalPoint(2 * x - 2 * z));
+		REQUIRE(p4 == o);
+	}
+
+	SECTION("Rotation at z")
+	{
+		auto plane1 = OuterProduct(o, CreateConformalPoint(y), CreateConformalPoint(z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(z), CreateConformalPoint(x + y + 2 * z), CreateConformalPoint(y + z), inf);
+
+		auto rotator = plane2 * plane1;
+
+		REQUIRE(Normalized(rotator) == std::sqrt(0.5) - std::sqrt(0.5) * (1 - z * inf) * z * x);
+
+		auto p1 = VersorProduct(rotator, o);
+		auto p2 = VersorProduct(rotator, p1);
+		auto p3 = VersorProduct(rotator, p2);
+		auto p4 = VersorProduct(rotator, p3);
+
+		REQUIRE(p1 == CreateConformalPoint(-x + z));
+		REQUIRE(p2 == CreateConformalPoint(2 * z));
+		REQUIRE(p3 == CreateConformalPoint(x + z));
+		REQUIRE(p4 == o);
+	}
+
+	SECTION("Rotation at x + z")
+	{
+		auto plane1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(x + y), CreateConformalPoint(x + z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(x + z), CreateConformalPoint(2 * x + 2 * z), CreateConformalPoint(x + y + z), inf);
+
+		auto rotator = plane2 * plane1;
+		auto rotator2 = ConditionalCastToVersor<true>(std::sqrt(0.5) - std::sqrt(0.5) * (1 - (x + z) * inf) * z * x);
+
+		auto str1 = to_string(rotator);
+		auto str2 = to_string(rotator2);
+
+		REQUIRE(Normalized(rotator) == rotator2);
+
+		auto p1 = VersorProduct(rotator, o);
+		auto p2 = VersorProduct(rotator, p1);
+		auto p3 = VersorProduct(rotator, p2);
+		auto p4 = VersorProduct(rotator, p3);
+
+		REQUIRE(p1 == CreateConformalPoint(2 * z));
+		REQUIRE(p2 == CreateConformalPoint(2 * x + 2 * z));
+		REQUIRE(p3 == CreateConformalPoint(2 * x));
+		REQUIRE(p4 == o);
+	}
+
+
+	SECTION("Scale at the origin")
+	{
+		auto sphere1 = OuterProduct(CreateConformalPoint(-x), CreateConformalPoint(x), CreateConformalPoint(y), CreateConformalPoint(z));
+		auto sphere2 = OuterProduct(CreateConformalPoint(-2 * x), CreateConformalPoint(2 * y), CreateConformalPoint(2 * x), CreateConformalPoint(2 * z));
+
+		auto scaler = sphere2 * sphere1;
+
+		REQUIRE(Normalized(scaler) == std::cosh(std::log(2)) + std::sinh(std::log(2)) * OuterProduct(o, inf));
+
+		auto p1 = NormalizeConformalPoint(VersorProduct(scaler, CreateConformalPoint(x + y + z)));
+		auto p2 = NormalizeConformalPoint(VersorProduct(scaler, p1));
+		auto p3 = NormalizeConformalPoint(VersorProduct(scaler, p2));
+
+		REQUIRE(p1 == CreateConformalPoint(4 * (x + y + z)));
+		REQUIRE(p2 == CreateConformalPoint(16 * (x + y + z)));
+		REQUIRE(p3 == CreateConformalPoint(64 * (x + y + z)));
+	}
+
+
+	SECTION("Scale at x")
+	{
+		auto sphere1 = OuterProduct(o, CreateConformalPoint(2 * x), CreateConformalPoint(x + y), CreateConformalPoint(x + z));
+		auto sphere2 = OuterProduct(CreateConformalPoint(-x), CreateConformalPoint(x + 2 * y), CreateConformalPoint(3 * x), CreateConformalPoint(x + 2 * z));
+
+		auto scaler = sphere2 * sphere1;
+
+		REQUIRE(Normalized(scaler) == std::cosh(std::log(2)) + std::sinh(std::log(2)) * (1 - x * inf) * OuterProduct(o, inf));
+
+		auto p1 = NormalizeConformalPoint(VersorProduct(scaler, CreateConformalPoint(x + y + z)));
+		auto p2 = NormalizeConformalPoint(VersorProduct(scaler, p1));
+		auto p3 = NormalizeConformalPoint(VersorProduct(scaler, p2));
+
+		REQUIRE(p1 == CreateConformalPoint(x + 4 * (y + z)));
+		REQUIRE(p2 == CreateConformalPoint(x + 16 * (y + z)));
+		REQUIRE(p3 == CreateConformalPoint(x + 64 * (y + z)));
+	}
+
+
+	SECTION("Scale at y")
+	{
+		auto sphere1 = OuterProduct(o, CreateConformalPoint(x + y), CreateConformalPoint(2 * y), CreateConformalPoint(y + z));
+		auto sphere2 = OuterProduct(CreateConformalPoint(-2 * x + y), CreateConformalPoint(3 * y), CreateConformalPoint(2 * x + y), CreateConformalPoint(2 * z + y));
+
+		auto scaler = sphere2 * sphere1;
+
+		REQUIRE(Normalized(scaler) == std::cosh(std::log(2)) + std::sinh(std::log(2)) * (1 - y * inf) * OuterProduct(o, inf));
+
+		auto p1 = NormalizeConformalPoint(VersorProduct(scaler, CreateConformalPoint(x + y + z)));
+		auto p2 = NormalizeConformalPoint(VersorProduct(scaler, p1));
+		auto p3 = NormalizeConformalPoint(VersorProduct(scaler, p2));
+
+		REQUIRE(p1 == CreateConformalPoint(y + 4 * (x + z)));
+		REQUIRE(p2 == CreateConformalPoint(y + 16 * (x + z)));
+		REQUIRE(p3 == CreateConformalPoint(y + 64 * (x + z)));
+	}
+
+
+	SECTION("Scale at 2x - z")
+	{
+		auto sphere1 = OuterProduct(CreateConformalPoint(-x + 2 * x - z), CreateConformalPoint(x + 2 * x - z), CreateConformalPoint(y + 2 * x - z), CreateConformalPoint(z + 2 * x - z));
+		auto sphere2 = OuterProduct(CreateConformalPoint(-2 * x + 2 * x - z), CreateConformalPoint(2 * y + 2 * x - z), CreateConformalPoint(2 * x + 2 * x - z), CreateConformalPoint(2 * z + 2 * x - z));
+
+		auto scaler = sphere2 * sphere1;
+
+		REQUIRE(Normalized(scaler) == std::cosh(std::log(2)) + std::sinh(std::log(2)) * (1 - (2 * x - z) * inf) * OuterProduct(o, inf));
+
+		auto p1 = NormalizeConformalPoint(VersorProduct(scaler, CreateConformalPoint(x + y + z)));
+		auto p2 = NormalizeConformalPoint(VersorProduct(scaler, p1));
+		auto p3 = NormalizeConformalPoint(VersorProduct(scaler, p2));
+
+		REQUIRE(p1 == CreateConformalPoint(x + y + z + (4 - 1) * ((x + y + z) - (2 * x - z))));
+		REQUIRE(p2 == CreateConformalPoint(x + y + z + (16 - 1) * ((x + y + z) - (2 * x - z))));
+		REQUIRE(p3 == CreateConformalPoint(x + y + z + (64 - 1) * ((x + y + z) - (2 * x - z))));
 	}
 }
 
