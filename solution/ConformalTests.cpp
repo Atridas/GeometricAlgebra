@@ -2,6 +2,103 @@
 
 #include "catch.hpp"
 
+/*
+
+--------
+p = euclidean point
+P = o + p + 0.5 * p*p * inf = conformal point
+P*P = 0
+weight = -InnerProduct(inf, P)
+P, Q = conformal points
+distance = 0.5 * dot(P, Q) / (weight(P) * weight(Q))
+
+--------------------------------
+
+line = P ^ Q ^ inf = o ^ (q - p) ^ inf + p ^ q ^ inf
+line = (o ^ direction + momentum) ^ inf
+direction = inf | line
+direction = vector * inf
+closest point to origin = (o | line) / line
+
+plane = P ^ Q ^ M ^ inf = o ^ (q ^ m + m ^ p + p ^ q) ^ inf + p ^ q ^ m ^ inf
+line = (o ^ direction + momentum) ^ inf
+direction = inf | plane
+direction = bivector * inf
+closest point to origin = (o | plane) / plane
+
+--------------------------------
+
+dual sphere = (o + c + 0.5 * (c*c - r*r) * inf)
+sphere = dual sphere / I
+
+circle = Tc[ (o + 0.5r*r) * bivectorplane ]
+
+point pair = "
+
+------------------------------------------
+
+directions = euclidean * inf
+tangents at origin = o * euclidean direction
+tangent at a point = p ^ ((euclidean direction * inf) | p)
+
+-------------------------------------------
+
+translation = (1 - 0.5 * t * inf) obj (1 + 0.5 * t * inf)
+e^(-0.5 * t * inf)
+
+
+rotation at the origin = cos(-0.5 * angle) + sin(-0.5 * angle) * bivector
+e^(-0.5 * angle * bivector)
+
+
+scale at the origin e^s = cosh(0.5 * s) + sinh(0.5 * s) * o ^ inf
+e^(0.5 * s * o ^ inf)
+
+-------------------------------------------
+
+rotation at a point = cos(-0.5 * angle) + sin(-0.5 * angle) * (bivector + (bivector | point) * inf)
+e^(-0.5 * angle * (bivector + (bivector | point) * inf))
+
+scale at a point = cosh(0.5 * s) + sinh(0.5 * s) * (o + p) ^ inf
+e^(0.5s * (o + p) ^ inf)
+
+-------------------------------------------
+
+spiral
+
+spi = cos * cosh 
+	+ cos * sinh * o ^ inf
+    + sin * cosh * bivector
+	+ sin * sinh * o ^ bivector ^ inf
+
+e^(0.5 * (-angle * bivector + s * o ^ inf))
+
+
+
+
+spi = cos * cosh                                                 // scalar (1)
+	+ cos * sinh * (o + point) ^ inf                             // en + vector * inf (1 + 3 (+3))
+	+ sin * cosh * (bivector + (bivector | point) * inf)         // bivector + "moment" * inf (3 + [3 (+3)])
+	+ sin * sinh * (o ^ bivector + bivector ^ point) ^ inf       // quadvector (amb el bivector) + volume * inf (3 + 1 (+1))
+
+	// vector & moment son perpendiculars pero es "confonen"
+	// 12 o 16 elements
+
+
+
+e^(0.5 * (-angle * (bivector + (bivector | point) * inf) + s * (o + point) ^ inf))
+e^(0.5 * (-angle * bivector
+        + (-angle * (bivector | point) + s * point) ^ inf
+		+ s * o ^ inf))
+
+
+*/
+
+
+
+
+
+
 namespace GA
 {
 
@@ -33,27 +130,34 @@ namespace GA
 
 
 	template<typename Signature, int... Nums, typename... Others>
-	static std::string to_string(GA::Multivector<GA::BaseVector<Signature, Nums...>, Others...> const& value)
+	static std::string to_string(GA::Multivector<GA::BaseVector<Signature, Nums...>, Others...> const& value, bool addPlusSign = false)
 	{
 		using namespace std::string_literals;
 
 		if (value.value == 0)
 		{
 			if constexpr (sizeof...(Others) != 0)
-				return GA::to_string(value.others);
+				return GA::to_string(value.others, addPlusSign);
 			else
-				return "0"s;
+				return addPlusSign ? ""s : "0"s;
 		}
 		else
 		{
-			std::string result = std::to_string(value.value);
+			std::string result;
+			if(!addPlusSign)
+				result = std::to_string(value.value);
+			else if(value.value > 0)
+				result += " + "s + std::to_string(value.value);
+			else
+				result += " - "s + std::to_string(-value.value);
+
 			if constexpr (sizeof...(Nums) != 0)
 			{
 				result += " "s + GetVectorSuffix< Signature, Nums...>();
 			}
 			if constexpr (sizeof...(Others) != 0)
 			{
-				result += " + "s + GA::to_string(value.others);
+				result += GA::to_string(value.others, true);
 			}
 			return result;
 		}
@@ -109,6 +213,8 @@ TEST_CASE("3D Conformal")
 
 	auto o = 0.5 * e + 0.5 * n;
 	auto inf = n - e;
+
+	auto I = OuterProduct(o, x, y, z, inf);
 
 	REQUIRE(o * o == 0);
 	REQUIRE(inf * inf == 0);
@@ -230,6 +336,18 @@ TEST_CASE("3D Conformal")
 		REQUIRE(direction2 == -x * y + y * z);
 	}
 
+	SECTION("Parametric Sphere")
+	{
+		double r = 5;
+		auto t = 2 * x + 7 * y + 13 * z;
+		auto spherePart1 = (1 - 0.5 * t * inf) * o * x * y * z * (1 + 0.5 * t * inf);
+		auto spherePart2 = (1 - 0.5 * t * inf) * 0.5 * r * r * inf * x * y * z * (1 + 0.5 * t * inf);
+
+		auto str0 = to_string(CreateConformalPoint(t) * x * y * z);
+
+		auto str1 = to_string(spherePart1);
+		auto str2 = to_string(spherePart2);
+	}
 
 	SECTION("Translation")
 	{
@@ -354,6 +472,38 @@ TEST_CASE("3D Conformal")
 		REQUIRE(p4 == o);
 	}
 
+	SECTION("Oblique Rotation")
+	{
+		auto plane1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(y + z), CreateConformalPoint(x + z), inf);
+		auto plane2 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(y + z), CreateConformalPoint(2 * x + 15 * z), inf);
+
+		auto rotator = plane2 * plane1;
+
+		auto line = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(y + z), inf);
+
+		auto str1 = to_string(rotator);
+		auto str2 = to_string(line);
+		
+		auto str3 = to_string(Normalized(rotator));
+
+
+		auto str4 = to_string(LeftContraction(rotator, -I) );
+		auto str5 = to_string(LeftContraction(line, -I));
+
+
+
+		auto rotationPlane = x * y - x * z - y * z;
+		auto rotationPoint = x;
+
+		auto str6 = to_string(rotationPlane);
+		auto str7 = to_string(InnerProduct(rotationPlane, rotationPoint) * inf);
+
+
+
+
+		REQUIRE(Normalized(rotator) == line);
+	}
+
 
 	SECTION("Scale at the origin")
 	{
@@ -431,17 +581,38 @@ TEST_CASE("3D Conformal")
 	}
 
 
-	SECTION("Espiral")
+	SECTION("Scale at any point")
+	{
+		auto translation = 2 * x + 3 * y + z;
+		auto translatedScale = (1 - 0.5 * translation * inf) * OuterProduct(o, inf) * (1 + 0.5 * translation * inf);
+
+		auto str1 = to_string(translatedScale);
+		auto str2 = to_string(translation * inf);
+
+	}
+
+
+	SECTION("Spiral at any point")
+	{
+		auto translation = 2 * x + 3 * y + z;
+		auto translatedScale = (1 - 0.5 * translation * inf) * OuterProduct(o, 2 * y * z + z * x + x * y, inf) * (1 + 0.5 * translation * inf);
+
+		auto str1 = to_string(translatedScale);
+		auto str2 = to_string(translation * inf);
+
+	}
+
+	SECTION("Spiral")
 	{
 		auto plane1 = OuterProduct(o, CreateConformalPoint(y), CreateConformalPoint(z), inf);
 		auto plane2 = OuterProduct(o, CreateConformalPoint(x + 5 * z), CreateConformalPoint(y), inf);
 
-		auto rotator = plane2 * plane1;
+		auto rotator = Normalized(plane2 * plane1);
 
 		auto sphere1 = OuterProduct(CreateConformalPoint(-x), CreateConformalPoint(x), CreateConformalPoint(y), CreateConformalPoint(z));
 		auto sphere2 = OuterProduct(CreateConformalPoint(-1.1 * x), CreateConformalPoint(1.1 * y), CreateConformalPoint(1.1 * x), CreateConformalPoint(1.1 * z));
 
-		auto scaler = sphere2 * sphere1;
+		auto scaler = Normalized(sphere2 * sphere1);
 
 		auto spiraler = rotator * scaler;
 		//REQUIRE(rotator * scaler == scaler * rotator);
@@ -457,7 +628,9 @@ TEST_CASE("3D Conformal")
 		auto p9 = NormalizeConformalPoint(VersorProduct(spiraler, p8));
 		auto p10 = NormalizeConformalPoint(VersorProduct(spiraler, p9));
 
-		auto str = to_string(spiraler);
+		auto str1 = to_string(rotator);
+		auto str2 = to_string(scaler);
+		auto str3 = to_string(spiraler);
 
 		auto s1 = to_string(p1);
 		auto s2 = to_string(p2);
