@@ -64,6 +64,20 @@ e^(0.5s * (o + p) ^ inf)
 
 -------------------------------------------
 
+screw: cos(-0.5 * angle)                                                                       // scalar   (1)
+     + sin(-0.5 * angle) * bivector                                                            // bivector (3)
+	 + (sin(-0.5 * angle) * (bivector | point) - 0.5 * cos(-0.5 * angle) * translation) ^ inf  // vector ^ inf (3 (+3))
+	 + 0.5 * sin(-0.5 * angle) * translation ^ bivector ^ inf                                  // trivector ^ inf (1 (+1))
+
+
+
+e^(-0.5 * (angle * (bivector + (bivector | point) ^ inf) + t ^ inf))
+e^(-0.5 * (angle * bivector                         // 3
+         + (angle * (bivector | point) + t) ^ inf   // 3 (+3)
+		 )
+
+-------------------------------------------
+
 spiral
 
 spi = cos * cosh 
@@ -87,9 +101,10 @@ spi = cos * cosh                                                 // scalar (1)
 
 
 e^(0.5 * (-angle * (bivector + (bivector | point) * inf) + s * (o + point) ^ inf))
-e^(0.5 * (-angle * bivector
-        + (-angle * (bivector | point) + s * point) ^ inf
-		+ s * o ^ inf))
+e^(0.5 * (-angle * bivector                                // bivector (3)
+        + (-angle * (bivector | point) + s * point) ^ inf  // vector * inf (3 (+3))
+		+ s * o ^ inf)                                     // bivector (1)
+		)
 
 
 */
