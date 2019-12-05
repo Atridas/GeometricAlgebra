@@ -107,6 +107,17 @@ e^(0.5 * (-angle * bivector                                // bivector (3)
 		)
 
 
+
+----------------------------------------------------------------------------------------------
+
+Tangent:
+
+p: conformal point 
+p ^ (p | direction)
+
+
+tangent | (p * inf) = distance from the tangent point to p times tangent "length"
+
 */
 
 
@@ -688,5 +699,120 @@ TEST_CASE("3D Conformal")
 		auto s8 = to_string(p8);
 		auto s9 = to_string(p9);
 		auto s10 = to_string(p10);
+	}
+
+
+	auto CreateTangent = [inf, CreateConformalPoint](auto point, auto direction)
+	{
+		auto cp = CreateConformalPoint(point);
+		auto directionBivector = direction * inf;
+		return OuterProduct(cp, LeftContraction(cp, directionBivector));
+	};
+
+	SECTION("Tangent")
+	{
+		auto tangent1 = CreateTangent(x, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
+		auto tangent2 = CreateTangent(x, -y + z);
+
+		auto tangent3 = CreateTangent(x + y - z, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
+		auto tangent4 = CreateTangent(x + y - z, -std::sqrt(0.5) * y + std::sqrt(0.5) * z);
+
+		auto tangent5 = CreateTangent(x - y + z, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
+		auto tangent6 = CreateTangent(x - y + z, -std::sqrt(0.5) * y + std::sqrt(0.5) * z);
+
+		auto tangent7 = CreateTangent(2 * x, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
+		auto tangent8 = CreateTangent(2 * x, -std::sqrt(0.5) * y + std::sqrt(0.5) * z);
+
+		auto tangent9 = CreateTangent(5 * x, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
+		auto tangent0 = CreateTangent(5 * x, -std::sqrt(0.5) * y + std::sqrt(0.5) * z);
+
+		auto p1 = CreateConformalPoint(x);
+		auto p2 = CreateConformalPoint(x + y - z);
+		auto p3 = CreateConformalPoint(x - y + z);
+		auto p4 = CreateConformalPoint(2 * x);
+		auto p5 = CreateConformalPoint(-x);
+		auto p6 = CreateConformalPoint(5 * x);
+		auto p7 = CreateConformalPoint(x + 2 * y - 2 * z);
+		auto p8 = CreateConformalPoint(x - 2 * y + 2 * z);
+		auto p9 = CreateConformalPoint(4 * x + 2 * y - 2 * z);
+
+		auto DistanceTangentToPoint = [inf](auto tangent, auto p)
+		{
+			return ScalarProduct(tangent, p * inf);
+		};
+
+		auto s1p1 = to_string(DistanceTangentToPoint(tangent1, p1));
+		auto s1p2 = to_string(DistanceTangentToPoint(tangent1, p2));
+		auto s1p3 = to_string(DistanceTangentToPoint(tangent1, p3));
+		auto s1p4 = to_string(DistanceTangentToPoint(tangent1, p4));
+		auto s1p5 = to_string(DistanceTangentToPoint(tangent1, p5));
+		auto s1p6 = to_string(DistanceTangentToPoint(tangent1, p6));
+		auto s1p7 = to_string(DistanceTangentToPoint(tangent1, p7));
+		auto s1p8 = to_string(DistanceTangentToPoint(tangent1, p8));
+		auto s1p9 = to_string(DistanceTangentToPoint(tangent1, p9));
+
+		auto s2p1 = to_string(DistanceTangentToPoint(tangent2, p1));
+		auto s2p2 = to_string(DistanceTangentToPoint(tangent2, p2));
+		auto s2p3 = to_string(DistanceTangentToPoint(tangent2, p3));
+		auto s2p4 = to_string(DistanceTangentToPoint(tangent2, p4));
+		auto s2p5 = to_string(DistanceTangentToPoint(tangent2, p5));
+		auto s2p6 = to_string(DistanceTangentToPoint(tangent2, p6));
+		auto s2p7 = to_string(DistanceTangentToPoint(tangent2, p7));
+		auto s2p8 = to_string(DistanceTangentToPoint(tangent2, p8));
+		auto s2p9 = to_string(DistanceTangentToPoint(tangent2, p9));
+
+
+		auto s12 = to_string(ScalarProduct(tangent1, tangent2));
+
+		auto s13 = to_string(ScalarProduct(tangent1, tangent3));
+		auto s14 = to_string(ScalarProduct(tangent1, tangent4));
+		auto s15 = to_string(ScalarProduct(tangent1, tangent5));
+		auto s16 = to_string(ScalarProduct(tangent1, tangent6));
+		auto s17 = to_string(ScalarProduct(tangent1, tangent7));
+		auto s18 = to_string(ScalarProduct(tangent1, tangent8));
+		auto s19 = to_string(ScalarProduct(tangent1, tangent9));
+		auto s10 = to_string(ScalarProduct(tangent1, tangent0));
+
+		auto s23 = to_string(ScalarProduct(tangent2, tangent3));
+		auto s24 = to_string(ScalarProduct(tangent2, tangent4));
+		auto s25 = to_string(ScalarProduct(tangent2, tangent5));
+		auto s26 = to_string(ScalarProduct(tangent2, tangent6));
+		auto s27 = to_string(ScalarProduct(tangent2, tangent7));
+		auto s28 = to_string(ScalarProduct(tangent2, tangent8));
+		auto s29 = to_string(ScalarProduct(tangent2, tangent9));
+		auto s20 = to_string(ScalarProduct(tangent2, tangent0));
+
+
+		// theory: convert the tangent to a line (tangent ^ inf should do it) then make the 
+		auto plane1 = OuterProduct(CreateConformalPoint(x + y - z), CreateConformalPoint(2 * x + y - z), CreateConformalPoint(x + 2 * y), inf) * std::sqrt(0.5);
+		auto plane2 = OuterProduct(CreateConformalPoint(x + y - z), CreateConformalPoint(2 * x + y - z), CreateConformalPoint(x + y), inf);
+		
+		auto splane1 = to_string(plane1);
+		auto splane2 = to_string(plane2);
+
+
+		auto tangent1AsLine = to_string(OuterProduct(tangent1, inf));
+		auto tangent2AsLine = to_string(OuterProduct(tangent2, inf));
+		
+		auto tangent1AsLine_Direction = to_string(LeftContraction(inf,OuterProduct(tangent1, inf)));
+		auto tangent2AsLine_Direction = to_string(LeftContraction(inf,OuterProduct(tangent2, inf)));
+		
+		auto tangent1AsLine_Location = to_string(LeftContraction(o,OuterProduct(tangent1, inf)) * Inverse(OuterProduct(tangent1, inf)));
+		auto tangent2AsLine_Location = to_string(LeftContraction(o,OuterProduct(tangent2, inf)) * Inverse(OuterProduct(tangent2, inf)));
+
+		auto DistanceTangentToPlane = [o, x, y, z, inf, DistanceTangentToPoint](auto tangent, auto plane)
+		{
+			auto line = OuterProduct(tangent, inf);
+			auto antiwedged = LeftContraction(line * OuterProduct(o, x * y * z, inf), plane);
+			auto collisionPoint = RightContraction(antiwedged, o);
+			auto normalizedCollisionPoint = collisionPoint * (1 / -InnerProduct(collisionPoint, inf).value);
+			return DistanceTangentToPoint(tangent, normalizedCollisionPoint);
+		};
+
+		auto s1pl1 = to_string(DistanceTangentToPlane(tangent1, plane1));
+		auto s2pl1 = to_string(DistanceTangentToPlane(tangent2, plane1));
+		auto s1pl2 = to_string(DistanceTangentToPlane(tangent1, plane2));
+		auto s2pl2 = to_string(DistanceTangentToPlane(tangent2, plane2));
+
 	}
 }
