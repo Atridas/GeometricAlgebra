@@ -709,7 +709,107 @@ TEST_CASE("3D Conformal")
 		return OuterProduct(cp, LeftContraction(cp, directionBivector));
 	};
 
+	auto PointFromTangent = [inf](auto tangent)
+	{
+		return -tangent * Inverse(InnerProduct(inf, tangent));
+	};
+
+	auto DirectionFromTangent = [inf](auto tangent)
+	{
+		return -OuterProduct(LeftContraction(inf, tangent), inf);
+	};
+
+	auto DistanceTangentToPoint = [inf](auto tangent, auto p)
+	{
+		return ScalarProduct(tangent, p * inf);
+	};
+
+	auto DualRoundLocation = [inf](auto dualRound)
+	{
+		auto l = VersorProduct(dualRound, inf);
+		return -l * Inverse(LeftContraction(inf, l));
+		//return dualRound * Inverse(LeftContraction(inf, dualRound));
+	};
+
+	auto DualRoundSize = [inf](auto dualRound)
+	{
+		return dualRound * Reverse(dualRound) * (1 / (LeftContraction(inf, dualRound) * LeftContraction(inf, dualRound)).value);
+	};
+
+
+
 	SECTION("Tangent")
+	{
+		auto p1 = x;
+		auto p2 = x + y;
+		auto p3 = x + 2 * y - 3 * z;
+
+		auto d1 = Normalized(x);
+		auto d2 = Normalized(-y);
+		auto d3 = Normalized(-x + y - 4 * z);
+
+		auto t11 = CreateTangent(p1, d1);
+		auto t12 = CreateTangent(p1, d2);
+		auto t13 = CreateTangent(p1, d3);
+		auto t21 = CreateTangent(p2, d1);
+		auto t22 = CreateTangent(p2, d2);
+		auto t23 = CreateTangent(p2, d3);
+		auto t31 = CreateTangent(p3, d1);
+		auto t32 = CreateTangent(p3, d2);
+		auto t33 = CreateTangent(p3, d3);
+
+		auto st11 = to_string(t11);
+		auto st12 = to_string(t12);
+		auto st13 = to_string(t13);
+		auto st21 = to_string(t21);
+		auto st22 = to_string(t22);
+		auto st23 = to_string(t23);
+		auto st31 = to_string(t31);
+		auto st32 = to_string(t32);
+		auto st33 = to_string(t33);
+		
+		auto spt11 = to_string(PointFromTangent(t11));
+		auto spt12 = to_string(PointFromTangent(t12));
+		auto spt13 = to_string(PointFromTangent(t13));
+		auto spt21 = to_string(PointFromTangent(t21));
+		auto spt22 = to_string(PointFromTangent(t22));
+		auto spt23 = to_string(PointFromTangent(t23));
+		auto spt31 = to_string(PointFromTangent(t31));
+		auto spt32 = to_string(PointFromTangent(t32));
+		auto spt33 = to_string(PointFromTangent(t33));
+		
+		auto sdt11 = to_string(DirectionFromTangent(t11));
+		auto sdt12 = to_string(DirectionFromTangent(t12));
+		auto sdt13 = to_string(DirectionFromTangent(t13));
+		auto sdt21 = to_string(DirectionFromTangent(t21));
+		auto sdt22 = to_string(DirectionFromTangent(t22));
+		auto sdt23 = to_string(DirectionFromTangent(t23));
+		auto sdt31 = to_string(DirectionFromTangent(t31));
+		auto sdt32 = to_string(DirectionFromTangent(t32));
+		auto sdt33 = to_string(DirectionFromTangent(t33));
+
+		REQUIRE(EqualsEpsilon(PointFromTangent(t11), CreateConformalPoint(p1), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t12), CreateConformalPoint(p1), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t13), CreateConformalPoint(p1), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t21), CreateConformalPoint(p2), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t22), CreateConformalPoint(p2), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t23), CreateConformalPoint(p2), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t31), CreateConformalPoint(p3), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t32), CreateConformalPoint(p3), 0.01));
+		REQUIRE(EqualsEpsilon(PointFromTangent(t33), CreateConformalPoint(p3), 0.01));
+
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t11), d1 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t12), d2 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t13), d3 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t21), d1 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t22), d2 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t23), d3 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t31), d1 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t32), d2 * inf, 0.01));
+		REQUIRE(EqualsEpsilon(DirectionFromTangent(t33), d3 * inf, 0.01));
+	}
+
+	SECTION("Tangent - Plane")
 	{
 		auto tangent1 = CreateTangent(x, std::sqrt(0.5) * y - std::sqrt(0.5) * z);
 		auto tangent2 = CreateTangent(x, -y + z);
@@ -735,11 +835,6 @@ TEST_CASE("3D Conformal")
 		auto p7 = CreateConformalPoint(x + 2 * y - 2 * z);
 		auto p8 = CreateConformalPoint(x - 2 * y + 2 * z);
 		auto p9 = CreateConformalPoint(4 * x + 2 * y - 2 * z);
-
-		auto DistanceTangentToPoint = [inf](auto tangent, auto p)
-		{
-			return ScalarProduct(tangent, p * inf);
-		};
 
 		auto s1p1 = to_string(DistanceTangentToPoint(tangent1, p1));
 		auto s1p2 = to_string(DistanceTangentToPoint(tangent1, p2));
@@ -786,6 +881,7 @@ TEST_CASE("3D Conformal")
 		// theory: convert the tangent to a line (tangent ^ inf should do it) then make the 
 		auto plane1 = OuterProduct(CreateConformalPoint(x + y - z), CreateConformalPoint(2 * x + y - z), CreateConformalPoint(x + 2 * y), inf) * std::sqrt(0.5);
 		auto plane2 = OuterProduct(CreateConformalPoint(x + y - z), CreateConformalPoint(2 * x + y - z), CreateConformalPoint(x + y), inf);
+		auto plane3 = OuterProduct(CreateConformalPoint(2 * x + 2 * y - 2 * z), CreateConformalPoint(3 * x + 2 * y - 2 * z), CreateConformalPoint(2 * x + 2 * y), inf);
 		
 		auto splane1 = to_string(plane1);
 		auto splane2 = to_string(plane2);
@@ -809,10 +905,119 @@ TEST_CASE("3D Conformal")
 			return DistanceTangentToPoint(tangent, normalizedCollisionPoint);
 		};
 
+		auto DistanceTangentToPlaneAlt = [o, x, y, z, inf, DistanceTangentToPoint](auto tangent, auto plane)
+		{
+			return LeftContraction(tangent * OuterProduct(o, x * y * z, inf), plane);
+		};
+
 		auto s1pl1 = to_string(DistanceTangentToPlane(tangent1, plane1));
 		auto s2pl1 = to_string(DistanceTangentToPlane(tangent2, plane1));
 		auto s1pl2 = to_string(DistanceTangentToPlane(tangent1, plane2));
 		auto s2pl2 = to_string(DistanceTangentToPlane(tangent2, plane2));
+		auto s1pl3 = to_string(DistanceTangentToPlane(tangent1, plane3));
+		auto s2pl3 = to_string(DistanceTangentToPlane(tangent2, plane3));
+		
 
+		auto s1pl1A = to_string(DistanceTangentToPlaneAlt(tangent1, plane1));
+		auto s2pl1A = to_string(DistanceTangentToPlaneAlt(tangent2, plane1));
+		auto s1pl2A = to_string(DistanceTangentToPlaneAlt(tangent1, plane2));
+		auto s2pl2A = to_string(DistanceTangentToPlaneAlt(tangent2, plane2));
+		auto s1pl3A = to_string(DistanceTangentToPlaneAlt(tangent1, plane3));
+		auto s2pl3A = to_string(DistanceTangentToPlaneAlt(tangent2, plane3));
+		
+
+		auto s1pl1AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent1, plane1)));
+		auto s2pl1AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent2, plane1)));
+		auto s1pl2AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent1, plane2)));
+		auto s2pl2AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent2, plane2)));
+		auto s1pl3AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent1, plane3)));
+		auto s2pl3AL = to_string(DualRoundLocation(DistanceTangentToPlaneAlt(tangent2, plane3)));
+		
+
+		auto s1pl1AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent1, plane1)));
+		auto s2pl1AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent2, plane1)));
+		auto s1pl2AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent1, plane2)));
+		auto s2pl2AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent2, plane2)));
+		auto s1pl3AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent1, plane3)));
+		auto s2pl3AS = to_string(DualRoundSize(DistanceTangentToPlaneAlt(tangent2, plane3)));
+
+	}
+
+
+
+	SECTION("Tangent - Line")
+	{
+		auto tangent1 = CreateTangent(x + y, std::sqrt(0.5) * x - std::sqrt(0.5) * y);
+		auto tangent2 = CreateTangent(x - y, x);
+
+		auto line1 = OuterProduct(CreateConformalPoint(x), CreateConformalPoint(2 * x), inf);
+		auto line2 = OuterProduct(CreateConformalPoint(y), CreateConformalPoint(2 * y), inf);
+		auto line3 = OuterProduct(CreateConformalPoint(5 * y), CreateConformalPoint(5 * x), inf);
+
+		auto st1 = to_string(tangent1);
+		auto st2 = to_string(tangent2);
+		
+		auto sl1 = to_string(line1);
+		auto sl2 = to_string(line2);
+		auto sl3 = to_string(line3);
+
+		auto ClosestPointToTangentInLine = [o, x, y, z, inf](auto tangent, auto line)
+		{
+			auto tangentToLine = OuterProduct(tangent, inf);
+			auto orthogonalToLine = OuterProduct(tangent, inf) * OuterProduct(o, x * y, inf);
+			auto antiwedged = LeftContraction(orthogonalToLine, line);
+			auto collisionPoint = RightContraction(antiwedged, o);
+			//return ;
+			auto st = to_string(tangent);
+			auto sl = to_string(line);
+			auto sttl = to_string(tangentToLine);
+			auto sotl = to_string(orthogonalToLine);
+			auto sa = to_string(antiwedged);
+			auto cp = to_string(collisionPoint);
+			return collisionPoint;
+		};
+
+		
+
+		auto ClosestPointToTangentInLine2 = [o, x, y, z, inf](auto tangent, auto line)
+		{
+			auto orthogonalToTangent = tangent * OuterProduct(o, x * y, inf);
+			auto antiwedged = LeftContraction(orthogonalToTangent, line);
+			//return ;
+			auto st = to_string(tangent);
+			auto sl = to_string(line);
+			auto sott = to_string(orthogonalToTangent);
+			auto sa = to_string(antiwedged);
+			return antiwedged;
+		};
+
+
+		auto spt1l1 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent1, line1)));
+		auto spt2l1 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent2, line1)));
+		auto spt1l2 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent1, line2)));
+		auto spt2l2 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent2, line2)));
+		auto spt1l3 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent1, line3)));
+		auto spt2l3 = to_string(DualRoundLocation(ClosestPointToTangentInLine(tangent2, line3)));
+		
+		auto spt1l1_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent1, line1)));
+		auto spt2l1_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent2, line1)));
+		auto spt1l2_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent1, line2)));
+		auto spt2l2_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent2, line2)));
+		auto spt1l3_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent1, line3)));
+		auto spt2l3_s = to_string(DualRoundSize(ClosestPointToTangentInLine(tangent2, line3)));
+
+		auto spt1l1_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent1, line1)));
+		auto spt2l1_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent2, line1)));
+		auto spt1l2_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent1, line2)));
+		auto spt2l2_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent2, line2)));
+		auto spt1l3_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent1, line3)));
+		auto spt2l3_2 = to_string(DualRoundLocation(ClosestPointToTangentInLine2(tangent2, line3)));
+
+		auto spt1l1_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent1, line1)));
+		auto spt2l1_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent2, line1)));
+		auto spt1l2_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent1, line2)));
+		auto spt2l2_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent2, line2)));
+		auto spt1l3_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent1, line3)));
+		auto spt2l3_2s = to_string(DualRoundSize(ClosestPointToTangentInLine2(tangent2, line3)));
 	}
 }

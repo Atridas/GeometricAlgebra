@@ -37,6 +37,18 @@ namespace GA
 		{
 			return Multivector<>{};
 		}
+
+		template <typename Q>
+		constexpr bool EqualsEpsilon(Multivector<> m, Q epsilon) const noexcept
+		{
+			return true;
+		}
+
+		template <typename Q, typename OtherFirstBaseVector, typename... OtherBaseVectors>
+		constexpr bool EqualsEpsilon(Multivector<OtherFirstBaseVector, OtherBaseVectors...> m, Q epsilon) const noexcept
+		{
+			return m.EqualsEpsilon(Multivector<OtherFirstBaseVector, OtherBaseVectors...>::ScalarMultivector{ 0 }, epsilon);
+		}
 	};
 
 	template <typename FirstBaseVector, typename... BaseVectors>
@@ -120,6 +132,9 @@ namespace GA
 
 		template <typename... OtherBaseVectors>
 		constexpr bool operator==(Multivector<OtherBaseVectors...>) const noexcept;
+
+		template <typename... OtherBaseVectors>
+		constexpr bool EqualsEpsilon(Multivector<OtherBaseVectors...>, T epsilon) const noexcept;
 
 		template <typename... OtherBaseVectors>
 		constexpr bool operator!=(Multivector<OtherBaseVectors...>) const noexcept;
